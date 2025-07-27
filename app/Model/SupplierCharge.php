@@ -1,0 +1,13 @@
+<?php
+
+namespace App\Model;
+
+use Illuminate\Database\Eloquent\Model;
+
+class SupplierCharge extends Model
+{
+    protected $guarded=[];
+    public function supplier(){
+        return $this->belongsTo(Supplier::class,'supplier_id','id');
+    }
+}
