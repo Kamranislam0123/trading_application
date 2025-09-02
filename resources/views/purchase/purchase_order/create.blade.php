@@ -154,7 +154,7 @@
                                         </tr>
                                     @endforeach
                                 @else
-                                    @for ($i = 1; $i <=50; $i++)
+                                    @for ($i = 1; $i <=1; $i++)
                                     <tr class="product-item">
                                         <td>
                                             <div class="form-group">

@@ -38,7 +38,7 @@
 <div class="login-box">
     <div class="login-logo">
         <a href="{{ route('login') }}">
-            <img src="{{ asset('img/logo.png') }}" height="80px" alt="Your Choice">
+            <img src="{{ asset('img/logo.png') }}" height="50px" alt="Your Choice">
         </a>
     </div>
     <!-- /.login-logo -->
@@ -49,7 +49,7 @@
             @csrf
 
             <div class="form-group has-feedback">
-                <input type="email" class="form-control" placeholder="Email" name="email" value="{{ old('email') }}" required autocomplete="email" autofocus>
+                <input type="email" class="form-control" placeholder="Email" name="email" value="{{ old('email') ? old('email') : 'admin@gmail.com' }}" required autocomplete="email" autofocus>
                 <span class="glyphicon glyphicon-envelope form-control-feedback"></span>
             </div>
 
@@ -58,7 +58,7 @@
             @enderror
 
             <div class="form-group has-feedback">
-                <input type="password" class="form-control" placeholder="Password" name="password" required autocomplete="current-password">
+                <input type="password" class="form-control" placeholder="Password" name="password"  value="12345678" required autocomplete="current-password">
                 <span class="glyphicon glyphicon-lock form-control-feedback"></span>
             </div>
 
@@ -83,7 +83,7 @@
 
             <hr>
             <a target="_blank" href="http://2aitbd.com">
-                <img style="display: block; margin-left: auto; margin-right: auto; height: 50px;" src="{{ asset('img/2ait.png') }}">
+                <img style="display: block; margin-left: auto; margin-right: auto; height: 50px;" src="{{ asset('img/datascapeit_logo.jpeg') }}">
             </a>
             <p style="text-align:center; font-size:14px; color:Blue;">
                 <a target="_blank" href="http://2aitbd.com">

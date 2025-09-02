@@ -14,7 +14,7 @@ class ClientManagementController extends Controller
 {
     public function index(){
         $clients = ClientManagement::where('marketing_id', Auth::user()->employee->id??'')->get();
-        return view('crm.index',compact('clients'));
+        return view('crm.index', compact('clients'));
     }
 
     public function employeeClientOrder(Request $request){

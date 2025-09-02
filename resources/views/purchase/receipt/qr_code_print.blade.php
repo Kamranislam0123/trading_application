@@ -42,7 +42,7 @@
 <body>
 <div class="p">
     <p style="margin-bottom: 2px !important;font-size:10px;text-align:center">{{ $product->productItem->name }}-{{ $product->productCategory->name }}</p>
-    {!! DNS1D::getBarcodeSVG($product->serial, 'C93',1.2,40); !!}
+    {!! DNS1D::getBarcodeSVG($product->serial, 'C93',1.2,40) !!}
     <p style="font-size:10px;text-align:center !important;display-inline:block ">Price: {{  number_format($product->selling_price,2) }} VAT included</p>
 
 </div>

@@ -67,7 +67,7 @@
                                             <li class="bar-code-size">
 
                                                 <p>{{ $log->productItem->name }} - {{ $log->productCategory->name }}</p>
-                                                {!! DNS1D::getBarcodeSVG($log->serial_no, 'C93',1.2,50); !!}
+                                                {!! DNS1D::getBarcodeSVG($log->serial_no, 'C93',1.2,50) !!}
                                                 <p>Price: {{  number_format($log->selling_price,2) }}</p>
                                             </li>
                                         </div>

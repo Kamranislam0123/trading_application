@@ -80,7 +80,7 @@
                             </tr>
                             <tr>
                                 <td>Account Name</td>
-                                <td>2A IT Limited</td>
+                                <td>Datascape IT Limited</td>
                             </tr>
                              <tr>
                                 <td>Account Number</td>

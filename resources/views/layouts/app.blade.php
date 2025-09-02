@@ -16,7 +16,7 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="author" content="Md. Al Arfin (Rokon)-01729890904">
-    <title> {{ config('app.name', 'Your Choice') }} </title>
+    <title> {{ config('app.name', 'Datascape Trading') }} </title>
 
     <!--Favicon-->
     <link rel="icon" href="{{ asset('img/favicon.ico') }}" type="image/x-icon" />
@@ -67,13 +67,13 @@
 
             @if(Auth::user())
             <h4 class="pull-left" style="color: white; margin-top: 15px; padding-left: 20px">
-                @if (Auth::user()->company_branch_id == 0)
+                {{-- @if (Auth::user()->company_branch_id == 0)
                   <b>  {{ Auth::user()->name }} </b>
                 @elseif (Auth::user()->company_branch_id == 0)
                     {{ config('app.name') }}
                 @else
                     Your Choice Plus
-                @endif
+                @endif --}}
             </h4>
             @endif
 
@@ -81,9 +81,9 @@
             <div class="navbar-custom-menu">
                 <ul class="nav navbar-nav">
                     <li class="">
-                        <a href="https://2aitautomation.com/about2ait" target="_blank" style="color:#fff;">
+                        {{-- <a href="https://2aitautomation.com/about2ait" target="_blank" style="color:#fff;">
                             About 2ait
-                        </a>
+                        </a> --}}
                     </li>
                     <!-- User Account: style can be found in dropdown.less -->
                     <li class="dropdown user user-menu">
@@ -695,10 +695,10 @@
     <div class="content-wrapper">
         <!-- Content Header (Page header) -->
         <section class="content-header">
-            <h1>
+            {{-- <h1>
                 @yield('title')
                 <small><a style="font-size:18px;font-weight:bold;color:red" href="{{ asset('yourchoice_china.apk') }}"><i class="fa fa-android" aria-hidden="true"></i> Android Apps</a></small>
-            </h1>
+            </h1> --}}
         </section>
 
         <!-- Main content -->
@@ -710,7 +710,7 @@
     <!-- /.content-wrapper -->
     <footer class="main-footer">
         <div class="pull-right hidden-xs">
-            <b>Design & Developed By <a target="_blank" href="http://2aitbd.com">2A IT Limited</a></b>
+            <b>Design & Developed By <a target="_blank" href="http://datascapeit.com">Datascape IT Limited</a></b>
         </div>
         <strong>Copyright &copy; {{ date('Y') }} <a href="{{ route('dashboard') }}">{{ config('app.name') }}</a>.</strong> All rights
         reserved.

@@ -123,7 +123,7 @@
 {{--                                                    {{ $income->bank->name??''.' - '.$income->account->account_no??'' }}--}}
 {{--                                                @endif--}}
                                             </td>
-                                            <td class="text-center">৳ {{ number_format($income->amount * nbrCalculation()),2 }}</td>
+                                            <td class="text-center">৳ {{ number_format($income->amount * nbrCalculation(),2) }}</td>
                                         </tr>
                                     @endforeach
 

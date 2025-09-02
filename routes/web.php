@@ -428,6 +428,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('cash', 'CommonController@cash')->name('cash');
     Route::post('cash', 'CommonController@cashPost');
 
+    Route::get('get-client', 'ClientManagementController@index')->name('get_clients');
+
     // Terms & Condition
     Route::get('terms-condition', 'TermsConditionController@termsCondition')->name('terms_condition');
     Route::post('terms-condition', 'TermsConditionController@store');

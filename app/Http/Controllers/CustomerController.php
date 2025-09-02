@@ -83,9 +83,9 @@ class CustomerController extends Controller
             })
             ->addColumn('branch_status', function(Customer $customer) {
                 if ($customer->company_branch_id == 1) {
-                    return '<span class="label label-success">Your choice</span>';
+                    return '<span class="label label-success">Datascape Trading</span>';
                 }else {
-                    return '<span class="label label-danger">Your choice plus</span>';
+                    return '<span class="label label-danger">Datascape IT Plus</span>';
                 }
             })
             ->rawColumns(['action','status','branch_status'])

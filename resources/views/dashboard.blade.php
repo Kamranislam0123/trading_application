@@ -24,7 +24,7 @@
     @if (Auth::user()->company_branch_id == 0 )
         <div class="row" style="margin-top:20px;">
             <div class="col-md-12">
-                <div class="row">
+                {{-- <div class="row">
                     <div class="col-md-5">
                         <img src="{{asset('img/it_department.jpeg')}}" height="250">
                     </div>
@@ -34,7 +34,7 @@
                     <div class="col-md-2">
                         <a  class="btn btn-primary btn-sm text-right payment" href="{{ route('payment_info') }}">Payment Details</a>
                     </div>
-                </div>
+                </div> --}}
             </div>
         </div>
     @endif
@@ -115,7 +115,7 @@
                     <span style="background-color: #303d99 !important;" class="info-box-icon bg-aqua"><i class="fa fa-shopping-cart"></i></span>
 
                     <div class="info-box-content">
-                        <span class="info-box-text">Today's Your Choice Sale</span>
+                        <span class="info-box-text">Today's Datascape IT Sale</span>
                         <span class="info-box-number">৳{{ number_format($todayYourChoiceSale * nbrCalculation(), 2) }}</span>
                     </div>
                     <!-- /.info-box-content -->
@@ -129,7 +129,7 @@
                     <span style="background-color: #b61f4f !important;" class="info-box-icon bg-aqua"><i class="fa fa-shopping-cart"></i></span>
 
                     <div class="info-box-content">
-                        <span class="info-box-text">Today's Your Choice Plus Sale</span>
+                        <span class="info-box-text">Today's Datascape IT Plus Sale</span>
                         <span class="info-box-number">৳{{ number_format($todayYourChoicePlusSale * nbrCalculation(), 2) }}</span>
                     </div>
                     <!-- /.info-box-content -->
