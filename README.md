@@ -1,78 +1,129 @@
-<p align="center"><img src="https://res.cloudinary.com/dtfbvvkyp/image/upload/v1566331377/laravel-logolockup-cmyk-red.svg" width="400"></p>
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/d/total.svg" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/v/stable.svg" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/license.svg" alt="License"></a>
-</p>
+## Project Overview
 
-## About Laravel
+**DataScape Trading** is a comprehensive enterprise resource planning (ERP) system built with Laravel 6.x, designed for managing trading operations, inventory, sales, purchases, HR, and accounting. The application appears to be tailored for a trading company with multiple branches.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Technology Stack
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **Framework**: Laravel 6.18.35
+- **Database**: MySQL
+- **PHP Version**: ^7.2
+- **Key Packages**:
+  - Laravel DomPDF for PDF generation
+  - Laravel Barcode for barcode/QR code generation
+  - Spatie Laravel Permission for role-based access control
+  - Yajra DataTables for data presentation
+  - Decimal to Words converter
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Core Modules & Flow
 
-## Learning Laravel
+### 1. **Authentication & User Management**
+- Role-based access control with permissions
+- User activity tracking
+- Company branch-based access restrictions
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 2. **Inventory Management**
+- **Product Management**: Items, categories, colors, sizes, descriptions
+- **Warehouse Management**: Multiple warehouse support
+- **Stock Management**: Purchase inventory, stock transfers, manual stock adjustments
+- **Barcode/QR Code**: Product identification and tracking
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1500 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 3. **Purchase Operations**
+```
+Supplier → Purchase Order → Purchase Receipt → Inventory → Stock Transfer
+```
+- Supplier management
+- Purchase order creation and management
+- Purchase receipt processing
+- Inventory tracking with serial numbers
+- Stock transfer between warehouses
+- Supplier payment management
 
-## Laravel Sponsors
+### 4. **Sales Operations**
+```
+Customer → Sales Order → Sales Receipt → Payment Collection
+```
+- Customer and sub-customer management
+- Sales order creation
+- Sales receipt generation
+- Multiple invoice types (regular, wastage, return)
+- Payment collection and tracking
+- Sales return processing
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+### 5. **HR & Payroll**
+- Employee management with departments and designations
+- Attendance tracking
+- Leave management
+- Salary processing and updates
+- Holiday management
+- Employee targets and performance tracking
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[British Software Development](https://www.britishsoftware.co)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- [UserInsights](https://userinsights.com)
-- [Fragrantica](https://www.fragrantica.com)
-- [SOFTonSOFA](https://softonsofa.com/)
-- [User10](https://user10.com)
-- [Soumettre.fr](https://soumettre.fr/)
-- [CodeBrisk](https://codebrisk.com)
-- [1Forge](https://1forge.com)
-- [TECPRESSO](https://tecpresso.co.jp/)
-- [Runtime Converter](http://runtimeconverter.com/)
-- [WebL'Agence](https://weblagence.com/)
-- [Invoice Ninja](https://www.invoiceninja.com)
-- [iMi digital](https://www.imi-digital.de/)
-- [Earthlink](https://www.earthlink.ro/)
-- [Steadfast Collective](https://steadfastcollective.com/)
-- [We Are The Robots Inc.](https://watr.mx/)
-- [Understand.io](https://www.understand.io/)
-- [Abdel Elrafa](https://abdelelrafa.com)
-- [Hyper Host](https://hyper.host)
-- [Appoly](https://www.appoly.co.uk)
-- [OP.GG](https://op.gg)
+### 6. **Financial Management**
+- **Accounting**: Account head types and subtypes
+- **Transactions**: Income, expense, and transfer tracking
+- **Banking**: Bank accounts, branches, mobile banking
+- **Cash Management**: Cash transactions and balance transfers
+- **Reports**: Profit & loss, balance summary, ledger, cashbook
 
-## Contributing
+### 7. **Reporting & Analytics**
+- Purchase and sales reports
+- Financial statements
+- Inventory reports
+- Employee reports
+- Client statements
+- Branch-wise analytics
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Business Flow
 
-## Code of Conduct
+### **Purchase Flow**:
+1. Create purchase order with supplier
+2. Receive products and create purchase receipt
+3. Update inventory with serial numbers
+4. Process supplier payments
+5. Transfer stock between warehouses as needed
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### **Sales Flow**:
+1. Create sales order for customer
+2. Generate sales receipt/invoice
+3. Process customer payments
+4. Handle returns and wastage
+5. Track outstanding dues
 
-## Security Vulnerabilities
+### **Inventory Flow**:
+1. Products purchased and stocked
+2. Serial number assignment
+3. Stock transfers between warehouses
+4. Sales from inventory
+5. Return processing
+6. Manual stock adjustments
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Key Features
 
-## License
+- **Multi-branch Support**: Company can operate multiple branches
+- **Role-based Permissions**: Granular access control
+- **Barcode/QR Integration**: Product tracking and identification
+- **Comprehensive Reporting**: Business intelligence and analytics
+- **Payment Management**: Multiple payment methods and tracking
+- **Document Generation**: PDF receipts, invoices, and reports
+- **Real-time Dashboard**: Sales, purchase, and financial overview
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Database Structure
+
+The application uses a relational database with key tables for:
+- Products, inventory, and stock management
+- Sales and purchase orders
+- Customer and supplier management
+- Financial transactions and accounting
+- HR and employee data
+- User management and permissions
+
+## Target Users
+
+This system is designed for:
+- Trading companies with multiple branches
+- Businesses requiring comprehensive inventory management
+- Companies needing detailed financial tracking
+- Organizations with HR and payroll requirements
+- Businesses requiring detailed reporting and analytics
+
+The application provides a complete solution for managing all aspects of a trading business, from initial product procurement through final sales and financial reporting, with strong emphasis on inventory tracking, financial management, and business intelligence.
