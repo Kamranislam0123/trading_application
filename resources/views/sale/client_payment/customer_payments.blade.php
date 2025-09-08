@@ -28,9 +28,9 @@
                             <tr>
                                 <th>Date</th>
                                 <th>Customer</th>
-                                <th>Branch</th>
+                                {{-- <th>Branch</th> --}}
                                 <th>Payment Method</th>
-                                <th>Amount</th>
+                                <th>Received Amount</th>
                                 <th>Note</th>
                                 <th>Received by</th>
                                 <th>Action</th>
@@ -41,7 +41,7 @@
                                 <tr>
                                     <td>{{ $payment->date->format('Y-m-d') }}</td>
                                     <td>{{ $payment->customer->name??'' }}</td>
-                                    <td>
+                                    {{-- <td>
                                         @if($payment->company_branch_id == 1)
                                             Your Choice
                                         @elseif($payment->company_branch_id == 2)
@@ -49,7 +49,7 @@
                                         @else
                                             Admin Payment
                                         @endif
-                                    </td>
+                                    </td> --}}
                                     <td>
                                         @if($payment->transaction_method == 5)
                                             Return Adjustment
@@ -57,7 +57,7 @@
                                             {{ ($payment->transaction_method==1?'Cash':($payment->transaction_method == 4?'Sale Adjustment':'Bank')) }}
                                         @endif
                                     </td>
-                                    <td>{{ number_format($payment->amount,2) }}</td>
+                                    <td>{{ number_format($payment->receive_amount ?? $payment->amount,2) }}</td>
                                     <td>{{ $payment->note }}</td>
                                     <td>
                                         @if ($payment->company_branch_id == 0)
