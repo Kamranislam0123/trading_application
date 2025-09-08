@@ -57,7 +57,7 @@
 
                             <div class="col-sm-10">
                                 <input type="text" class="form-control" placeholder="Enter Email"
-                                       name="email" value="{{ old('email') }}" required>
+                                       name="email" value="{{ old('email') }}" >
 
                                 @error('email')
                                 <span class="help-block">{{ $message }}</span>
@@ -70,7 +70,7 @@
 
                             <div class="col-sm-10">
                                 <input type="password" class="form-control"
-                                       name="password" value="{{ old('password') }}" required>
+                                       name="password" value="{{ old('password') }}" >
 
                                 @error('password')
                                 <span class="help-block">{{ $message }}</span>
@@ -197,10 +197,10 @@
                         </div>
 
                         <div class="form-group {{ $errors->has('employee_type') ? 'has-error' :'' }}">
-                            <label class="col-sm-2 control-label">Employee Type *</label>
+                            <label class="col-sm-2 control-label">Employee Type </label>
 
                             <div class="col-sm-10">
-                                <select class="form-control" name="employee_type" required>
+                                <select class="form-control" name="employee_type" >
                                     <option value="">Select Employee Type</option>
                                     <option value="1" {{ old('employee_type') == '1' ? 'selected' : '' }}>Permanent</option>
                                     <option value="2" {{ old('employee_type') == '2' ? 'selected' : '' }}>Temporary</option>
@@ -226,10 +226,10 @@
                         </div>
 
                         <div class="form-group {{ $errors->has('gender') ? 'has-error' :'' }}">
-                            <label class="col-sm-2 control-label">Gender *</label>
+                            <label class="col-sm-2 control-label">Gender </label>
 
                             <div class="col-sm-10">
-                                <select class="form-control" name="gender" required>
+                                <select class="form-control" name="gender" >
                                     <option value="">Select Gender</option>
                                     <option value="1" {{ old('gender') == '1' ? 'selected' : '' }}>Male</option>
                                     <option value="2" {{ old('gender') == '2' ? 'selected' : '' }}>Female</option>
@@ -242,10 +242,10 @@
                         </div>
 
                         <div class="form-group {{ $errors->has('marital_status') ? 'has-error' :'' }}">
-                            <label class="col-sm-2 control-label">Marital Status *</label>
+                            <label class="col-sm-2 control-label">Marital Status </label>
 
                             <div class="col-sm-10">
-                                <select class="form-control" name="marital_status" required>
+                                <select class="form-control" name="marital_status" >
                                     <option value="">Select Marital Status</option>
                                     <option value="1" {{ old('marital_status') == '1' ? 'selected' : '' }}>Single</option>
                                     <option value="2" {{ old('marital_status') == '2' ? 'selected' : '' }}>Married</option>
@@ -297,7 +297,7 @@
                         </div>
 
                         <div class="form-group {{ $errors->has('emergency_contact') ? 'has-error' :'' }}">
-                            <label class="col-sm-2 control-label">Emergency Contact *</label>
+                            <label class="col-sm-2 control-label">Emergency Contact Number *</label>
 
                             <div class="col-sm-10">
                                 <input type="text" class="form-control" placeholder="Enter Emergency Contact"
@@ -334,11 +334,11 @@
                         </div>
 
                         <div class="form-group {{ $errors->has('present_address') ? 'has-error' :'' }}">
-                            <label class="col-sm-2 control-label">Present Address *</label>
+                            <label class="col-sm-2 control-label">Present Address </label>
 
                             <div class="col-sm-10">
                                 <input type="text" class="form-control" placeholder="Enter Present Address"
-                                       name="present_address" value="{{ old('present_address') }}" required>
+                                       name="present_address" value="{{ old('present_address') }}" >
 
                                 @error('present_address')
                                 <span class="help-block">{{ $message }}</span>
@@ -347,11 +347,11 @@
                         </div>
 
                         <div class="form-group {{ $errors->has('permanent_address') ? 'has-error' :'' }}">
-                            <label class="col-sm-2 control-label">Permanent Address *</label>
+                            <label class="col-sm-2 control-label">Permanent Address </label>
 
                             <div class="col-sm-10">
                                 <input type="text" class="form-control" placeholder="Enter Permanent Address"
-                                       name="permanent_address" value="{{ old('permanent_address') }}" required>
+                                       name="permanent_address" value="{{ old('permanent_address') }}" >
 
                                 @error('permanent_address')
                                 <span class="help-block">{{ $message }}</span>
@@ -360,10 +360,10 @@
                         </div>
 
                         <div class="form-group {{ $errors->has('religion') ? 'has-error' :'' }}">
-                            <label class="col-sm-2 control-label">Religion *</label>
+                            <label class="col-sm-2 control-label">Religion </label>
 
                             <div class="col-sm-10">
-                                <select class="form-control" name="religion" required>
+                                <select class="form-control" name="religion" >
                                     <option value="">Select Religion</option>
                                     <option value="1" {{ old('religion') == '1' ? 'selected' : '' }}>Muslim</option>
                                     <option value="2" {{ old('religion') == '2' ? 'selected' : '' }}>Hindu</option>
@@ -391,7 +391,7 @@
 
 
                         <div id="salary">
-                            <div class="form-group {{ $errors->has('previous_salary') ? 'has-error' :'' }}">
+                            <!-- <div class="form-group {{ $errors->has('previous_salary') ? 'has-error' :'' }}">
                                 <label class="col-sm-2 control-label">Previous Salary </label>
 
                                 <div class="col-sm-10">
@@ -402,20 +402,20 @@
                                     <span class="help-block">{{ $message }}</span>
                                     @enderror
                                 </div>
-                            </div>
-                            <div class="form-group {{ $errors->has('gross_salary') ? 'has-error' :'' }}">
-                                <label class="col-sm-2 control-label">Gross Salary *</label>
+                            </div> -->
+                            <!-- <div class="form-group {{ $errors->has('gross_salary') ? 'has-error' :'' }}">
+                                <label class="col-sm-2 control-label">Gross Salary </label>
 
                                 <div class="col-sm-10">
                                     <input type="text" class="form-control" placeholder="Enter Gross Salary"
-                                           name="gross_salary" value="{{ old('gross_salary') }}" required>
+                                           name="gross_salary" value="{{ old('gross_salary') }}" >
 
                                     @error('gross_salary')
                                     <span class="help-block">{{ $message }}</span>
                                     @enderror
                                 </div>
-                            </div>
-                            <div class="form-group {{ $errors->has('bank_name') ? 'has-error' :'' }}">
+                            </div> -->
+                            <!-- <div class="form-group {{ $errors->has('bank_name') ? 'has-error' :'' }}">
                                 <label class="col-sm-2 control-label">Bank Name </label>
 
                                 <div class="col-sm-10">
@@ -452,7 +452,7 @@
                                     <span class="help-block">{{ $message }}</span>
                                     @enderror
                                 </div>
-                            </div>
+                            </div> -->
 
                         </div>
                     </div>
