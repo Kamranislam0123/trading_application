@@ -14,31 +14,115 @@
     <link rel="stylesheet" href="{{ asset('themes/backend/bower_components/bootstrap/dist/css/bootstrap.min.css') }}">
 
     <style>
-        #receipt-content{
-            font-size: 18px;
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .header-section {
+            margin-bottom: 30px;
+        }
+
+        .company-logo {
+            max-width: 120px;
+            max-height: 80px;
+            object-fit: contain;
+        }
+
+        .document-title {
+            font-size: 24px;
+            font-weight: bold;
+            text-decoration: underline;
+            margin: 0;
+            padding: 10px 0;
+        }
+
+        .company-details {
+            font-size: 11px;
+            line-height: 1.3;
+            margin-top: 40px;
+        }
+
+        .company-details p {
+            margin: 2px 0;
         }
 
         .table-bordered>thead>tr>th, .table-bordered>tbody>tr>th, .table-bordered>tfoot>tr>th, .table-bordered>thead>tr>td, .table-bordered>tbody>tr>td, .table-bordered>tfoot>tr>td {
             border: 1px solid black !important;
+            padding: 8px !important;
+            font-size: 12px;
+        }
+
+        .signature-section {
+            margin-top: 40px;
+        }
+
+        .signature-line {
+            border-top: 1px solid black;
+            width: 200px;
+            margin-top: 50px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 11px;
+            padding-top: 5px;
+        }
+
+        /* Hide print buttons when printing */
+        @media print {
+            .print-buttons {
+                display: none !important;
+            }
+            body {
+                padding: 10px;
+            }
         }
     </style>
 </head>
 <body>
 <div class="container-fluid">
-    <div class="row">
-        @if (Auth::user()->company_branch_id == 2)
-            <img src="{{ asset('img/your_choice_plus.png') }}"style="margin-top: 10px; float:inherit">
-        @else
-            <img src="{{ asset('img/your_choice.png') }}"style="margin-top: 10px; float:inherit">
-        @endif
-        <br>
-
-        <div class="col-xs-6 text-left">
-            <b>Date: </b> {{ $payment->date->format('j F, Y') }}
+    <!-- Header Section -->
+    <div class="row header-section">
+        <div class="col-xs-4">
+            <div class="company-details">
+                <p><strong>AT International</strong></p>
+                <p>Company Address</p>
+                <p>City, Country</p>
+                <p>Phone: +880-XXX-XXX-XXX</p>
+                <p>Email: info@atinternational.com</p>
+            </div>
         </div>
-
+        
+        <div class="col-xs-4 text-center">
+            <h1 class="document-title">DEBIT VOUCHER</h1>
+        </div>
+        
+        <div class="col-xs-4 text-right">
+            <div style="margin-bottom: 10px;">
+                @if (Auth::user()->company_branch_id == 2)
+                    <img src="{{ asset('img/your_choice_plus.png') }}" class="company-logo" alt="Your Choice Plus">
+                @else
+                    <img src="{{ asset('img/logo.png') }}" class="company-logo" alt="Your Choice">
+                @endif
+            </div>
+            <div class="company-details">
+                <p><strong>{{ $payment->customer->name ?? 'Customer Name' }}</strong></p>
+                <p>{{ $payment->customer->address ?? 'Customer Address' }}</p>
+                <p>{{ $payment->customer->mobile_no ?? 'Customer Mobile' }}</p>
+                <p>{{ $payment->customer->email ?? 'Customer Email' }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Document Info Section -->
+    <div class="row" style="margin-bottom: 20px;">
+        <div class="col-xs-6">
+            <strong>Date:</strong> {{ $payment->date->format('j F, Y') }}
+        </div>
         <div class="col-xs-6 text-right">
-            <b>No: </b> {{ str_pad($payment->id, 5, 0, STR_PAD_LEFT) }}
+            <strong>Invoice No:</strong> {{ $payment->invoice_no ?? 'N/A' }}
         </div>
     </div>
 
@@ -52,8 +136,8 @@
                     <td>
                         {{ $payment->customer->name??'' }}
                     </td>
-                    <th width="10%">Amount</th>
-                    <td width="15%">৳{{ number_format($payment->amount, 2) }}</td>
+                    <th width="10%"> Received Amount</th>
+                    <td width="15%">৳{{ number_format($payment->receive_amount ?? $payment->amount, 2) }}</td>
                 </tr>
 
                 <tr>
@@ -68,28 +152,24 @@
 
                 <tr>
                     <th>Paid By</th>
-                    @if ($payment->status == 1)
-                        <td colspan="4">Bank-Cheque Pending</td>
-                    @else
-                        <td colspan="3">
-                            @if($payment->transaction_method == 1)
-                                Cash
-                            @elseif($payment->transaction_method == 3)
-                                Mobile Banking
-                            @elseif($payment->transaction_method == 4)
-                                Sale Adjustment Discount
-                            @elseif($payment->transaction_method == 5)
-                                Return Adjustment Amount
-                            @elseif(empty($payment->bank->name))
-                                Cheque CashIn
-                            @else
-                                Bank - {{ $payment->bank->name??''.' - '.$payment->branch->name??''.' - '.$payment->account->account_no??'' }}
-                            @endif
-                        </td>
-                    @endif
+                    <td colspan="3">
+                        @if($payment->transaction_method == 1)
+                            Cash
+                        @elseif($payment->transaction_method == 2)
+                            Bank
+                        @elseif($payment->transaction_method == 3)
+                            Mobile Banking
+                        @elseif($payment->transaction_method == 4)
+                            Sale Adjustment Discount
+                        @elseif($payment->transaction_method == 5)
+                            Return Adjustment Amount
+                        @else
+                            {{ $payment->payment_method ?? 'Cash' }}
+                        @endif
+                    </td>
                 </tr>
 
-                @if ($payment->status == 1)
+                {{-- @if ($payment->status == 1)
                     <tr>
                         <th>Pending Cheque No.</th>
                         <td colspan="3">{{ $payment->client_cheque_no }}</td>
@@ -102,7 +182,7 @@
                         </tr>
                     @endif
 
-                @endif
+                @endif --}}
 
                 <tr>
                     <th>Note</th>
@@ -110,13 +190,13 @@
                 </tr>
                 <tr>
                     <th width="20%">
-                        Current Due
+                        Due Amount
                     </th>
                     <td>
-
+                        ৳{{ number_format($payment->due_amount ?? 0, 2) }}
                     </td>
-                    <th width="15%">Amount</th>
-                    <td width="15%">৳{{ number_format($payment->customer->due, 2) }}</td>
+                    <th width="15%">Total Amount</th>
+                    <td width="15%">৳{{ number_format($payment->total_sales_amount ?? 0, 2) }}</td>
                 </tr>
 
                 @if ($payment->status == 2)
@@ -135,10 +215,37 @@
     </div>
 </div>
 
+<!-- Signature Section -->
+<div class="row signature-section">
+    <div class="col-xs-6">
+        <div class="signature-line">
+            Received By
+        </div>
+    </div>
+    <div class="col-xs-6">
+        <div class="signature-line" style="margin-left: auto;">
+            Approved By
+        </div>
+    </div>
+</div>
+
+<div class="row print-buttons" style="margin-top: 20px; text-align: center;">
+    <div class="col-xs-12">
+        <button onclick="printDocument()" class="btn btn-primary btn-lg">Print</button>
+        <button onclick="window.close()" class="btn btn-default btn-lg" style="margin-left: 10px;">Close</button>
+    </div>
+</div>
 
 <script>
-    window.print();
-    window.onafterprint = function(){ window.close()};
+    function printDocument() {
+        window.print();
+    }
+    
+    // Optional: Close window after printing
+    window.onafterprint = function(){ 
+        // Uncomment the line below if you want to auto-close after printing
+        // window.close();
+    };
 </script>
 </body>
 </html>
