@@ -7,6 +7,7 @@ use App\Model\BankAccount;
 use App\Model\Cash;
 use App\Model\CompanyBranch;
 use App\Model\Customer;
+use App\Model\Employee;
 use App\Model\MobileBanking;
 use App\Model\ProductItem;
 use App\Model\PurchaseInventory;
@@ -342,53 +343,85 @@ class SaleController extends Controller
 
     public function manuallyChequeIn() {
         $customers = Customer::where('status',1)->get();
-        return view('sale.client_payment.manually_chequeIn',compact('customers'));
+        $employees = Employee::orderBy('name')->get();
+        return view('sale.client_payment.manually_chequeIn',compact('customers','employees'));
     }
     public function manuallyChequeInPost(Request $request) {
 
+        // Debug: Log the request data
+        \Log::info('ManuallyChequeIn Request Data:', $request->all());
+
         $request->validate([
             'customer' => 'required',
-            'sale_order_no' => 'nullable',
-            'client_bank_name' => 'required|string|max:255',
-            'client_cheque_no' => 'required|max:255',
-            'cheque_date' => 'required',
-            'client_amount' => 'required|min:0',
+            'invoice_no' => 'nullable|string|max:255',
+            'total_sales_amount' => 'nullable|numeric|min:0',
+            'receive_amount' => 'nullable|numeric|min:0',
+            'due_amount' => 'nullable|numeric|min:0',
+            'payment_method' => 'required|in:1,2',
+            'next_payment_date' => 'nullable|date',
+            'next_approximate_payment' => 'nullable|numeric|min:0',
+            'sales_person_id' => 'required|exists:employees,id',
+            'note' => 'nullable|string',
         ]);
 
         $customer = Customer::find($request->customer);
+        
+        if (!$customer) {
+            return redirect()->back()->withInput()->with('message', 'Customer not found');
+        }
 
             $payment = new SalePayment();
-            $payment->sales_order_id = $request->sale_order_no??null;
+            $payment->invoice_no = $request->invoice_no;
+            $payment->total_sales_amount = $request->total_sales_amount;
+            $payment->receive_amount = $request->receive_amount;
+            $payment->due_amount = $request->due_amount;
+            $payment->payment_method = $request->payment_method;
+            $payment->next_payment_date = $request->next_payment_date;
+            $payment->next_approximate_payment = $request->next_approximate_payment;
             $payment->customer_id = $customer->id;
             $payment->company_branch_id = Auth::user()->company_branch_id;
-            $payment->transaction_method = 2;
-            $payment->client_bank_name = $request->client_bank_name;
-            $payment->client_cheque_no = $request->client_cheque_no;
-            $payment->cheque_date = $request->cheque_date;
-            $payment->client_amount = $request->client_amount;
-            $payment->amount = $request->client_amount;
+            $payment->transaction_method = $request->payment_method; // Use the selected payment method
+            $payment->sales_person_id = $request->sales_person_id;
+            $payment->amount = $request->receive_amount; // Use receive amount as the payment amount
             $payment->date = Carbon::now();
-            $payment->cheque_date = $request->cheque_date;
             $payment->note = $request->note;
             $payment->status = 1;
-            $payment->save();
+            
+            // Debug: Log the payment data before saving
+            \Log::info('Payment Data Before Save:', $payment->toArray());
+            
+            try {
+                $payment->save();
+                \Log::info('Payment saved successfully with ID: ' . $payment->id);
+            } catch (\Exception $e) {
+                \Log::error('Error saving payment: ' . $e->getMessage());
+                \Log::error('Payment data: ' . json_encode($payment->toArray()));
+                return redirect()->back()->withInput()->with('message', 'Error saving payment: ' . $e->getMessage());
+            }
 
             $log = new TransactionLog();
             $log->date = Carbon::now();
-            $log->particular = 'Rev. from '."Manual Cheque".' '.$customer->name;
+            $log->particular = 'Rev. from '."Manual Payment".' '.$customer->name;
             $log->transaction_type = 1;
-            $log->transaction_method = 2;
+            $log->transaction_method = $request->payment_method;
             $log->account_head_type_id = 2;
             $log->account_head_sub_type_id = 2;
-            $log->amount = $request->client_amount;
+            $log->amount = $request->receive_amount;
             $log->customer_id = $customer->id ?? null;
             $log->company_branch_id = Auth::user()->company_branch_id;
-            $log->sales_order_id = $request->sale_order_no??null;
             $log->sale_payment_id = $payment->id;
             $log->payment_cheak_status = 1;
-            $log->save();
+            
+            try {
+                $log->save();
+                \Log::info('TransactionLog saved successfully with ID: ' . $log->id);
+            } catch (\Exception $e) {
+                \Log::error('Error saving TransactionLog: ' . $e->getMessage());
+                \Log::error('TransactionLog data: ' . json_encode($log->toArray()));
+                return redirect()->back()->withInput()->with('message', 'Error saving transaction log: ' . $e->getMessage());
+            }
 
-        return redirect()->route('client_payment.all_pending_check')->with('message','Cheque Add Successfully');
+        return redirect()->route('client_payment.all_pending_check')->with('message','Payment Added Successfully');
     }
 
     public function saleReceiptCustomer() {
@@ -469,16 +502,18 @@ class SaleController extends Controller
     }
 
     public function salePaymentDetails(SalePayment $payment) {
-        if($payment->amount > 0){
-        $payment->amount_in_word = DecimalToWords::convert(($payment->amount * nbrCalculation()),'Taka',
+        $displayAmount = $payment->receive_amount ?? $payment->amount;
+        if($displayAmount > 0){
+        $payment->amount_in_word = DecimalToWords::convert($displayAmount,'Taka',
             'Poisa');
         }
         return view('sale.receipt.payment_details', compact('payment'));
     }
 
     public function salePaymentPrint(SalePayment $payment) {
-        if($payment->amount > 0){
-        $payment->amount_in_word = DecimalToWords::convert($payment->amount,'Taka',
+        $displayAmount = $payment->receive_amount ?? $payment->amount;
+        if($displayAmount > 0){
+        $payment->amount_in_word = DecimalToWords::convert($displayAmount,'Taka',
             'Poisa');
         }
         return view('sale.receipt.payment_print', compact('payment'));
@@ -1374,21 +1409,49 @@ class SaleController extends Controller
     public function customerPayments($customer_id){
         $customer = Customer::find($customer_id);
         $banks = Bank::where('status',1)->orderBy('name')->get();
-        $payments = SalePayment::where('customer_id', $customer_id)->orderBy('date','desc')->paginate(10);
+        $payments = SalePayment::where('customer_id', $customer_id)
+            ->orderBy('date','desc')
+            ->orderBy('id','desc')
+            ->paginate(10);
         return view('sale.client_payment.customer_payments', compact('customer','payments','banks'));
     }
-    public function allPendingCheque(){
+    public function allPendingCheque(Request $request){
         $currentDate = date('Y-m-d');
         $banks = Bank::where('status',1)->orderBy('name')->get();
+        $customers = Customer::where('status',1)->orderBy('name')->get();
+        
+        // Build query based on user's company branch
+        $query = SalePayment::where('status', 1)->with(['customer', 'salesPerson']);
+        
         if(Auth::user()->company_branch_id==1){
-            $payments = SalePayment::where('status', 1)->where('company_branch_id',1)->paginate(10);
+            $query->where('company_branch_id',1);
         }elseif (Auth::user()->company_branch_id==2){
-            $payments = SalePayment::where('status', 1)->where('company_branch_id',2)->paginate(10);
-        }else{
-            $payments = SalePayment::where('status', 1)->paginate(10);
+            $query->where('company_branch_id',2);
         }
+        
+        // Apply search filters
+        if($request->filled('customer_id')){
+            $query->where('customer_id', $request->customer_id);
+        }
+        
+        if($request->filled('invoice_no')){
+            $query->where('invoice_no', 'like', '%' . $request->invoice_no . '%');
+        }
+        
+        if($request->filled('date_from')){
+            $query->whereDate('date', '>=', $request->date_from);
+        }
+        
+        if($request->filled('date_to')){
+            $query->whereDate('date', '<=', $request->date_to);
+        }
+        
+        $payments = $query->orderBy('date', 'desc')->paginate(10);
+        
+        // Preserve search parameters in pagination links
+        $payments->appends($request->query());
 
-        return view('sale.client_payment.all_pending_cheque',compact('payments','banks','currentDate'));
+        return view('sale.client_payment.all_pending_cheque',compact('payments','banks','currentDate','customers'));
     }
 
     public function adminPendingCheque(){
