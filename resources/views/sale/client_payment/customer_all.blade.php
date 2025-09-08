@@ -34,7 +34,7 @@
                             <th>Name</th>
                             <th>Address</th>
                             <th>Mobile</th>
-                            <th>Branch</th>
+                            {{-- <th>Branch</th> --}}
                             <th>Opening Due</th>
                             <th>Total</th>
                             <th>Return</th>
@@ -173,7 +173,7 @@
                     {data: 'name', name: 'name'},
                     {data: 'address', name: 'address'},
                     {data: 'mobile_no', name: 'mobile_no'},
-                    {data: 'branch', name: 'branch'},
+                    {{-- {data: 'branch', name: 'branch'}, --}}
                     {data: 'opening_due', name: 'opening_due', orderable: false},
                     {data: 'total', name: 'total', orderable: false},
                     {data: 'return', name: 'return', orderable: false},
