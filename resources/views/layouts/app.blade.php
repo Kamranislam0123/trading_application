@@ -124,7 +124,8 @@
                 ?>
                 @if(Auth::id() != 36)
                 
-                @can('administrator')
+                <!-- Administrator menu -->
+                <!-- @can('administrator')
                     <li class="treeview {{ in_array(Route::currentRouteName(), $subMenu) ? 'active' : '' }}">
                         <a href="#">
                             <i class="fa fa-circle-o text-blue"></i> <span>Administrator</span>
@@ -150,7 +151,7 @@
 
                         </ul>
                     </li>
-                @endcan
+                @endcan -->
                 
                 @endif
 
@@ -225,11 +226,11 @@
                                 <a href="{{ route('report.employee_list') }}"><i class="fa fa-circle-o"></i> Employee List</a>
                             </li>
                             @endcan
-                            @can('employee_attendance')
+                            <!-- @can('employee_attendance')
                             <li class="{{ Route::currentRouteName() == 'employee.attendance' ? 'active' : '' }}">
                                 <a href="{{ route('employee.attendance') }}"><i class="fa fa-circle-o"></i> Employee Attendance</a>
                             </li>
-                            @endcan
+                            @endcan -->
                         </ul>
                     </li>
                 @endcan
@@ -237,7 +238,9 @@
                 $subMenu = ['payroll.salary_update.index', 'payroll.salary_process.index',
                     'payroll.leave.index','payroll.holiday.index','payroll.holiday_add','payroll.holiday_edit'];
                 ?>
-                @can('payroll')
+                
+                <!-- Payroll menu -->
+                <!-- @can('payroll')
                 <li class="treeview {{ in_array(Route::currentRouteName(), $subMenu) ? 'active' : '' }}">
                     <a href="#">
                         <i class="fa fa-circle-o text-info"></i> <span>Payroll</span>
@@ -268,7 +271,7 @@
                         @endcan
                     </ul>
                 </li>
-                @endcan
+                @endcan -->
 
                 <?php
                 $subMenu = ['supplier', 'supplier.add', 'supplier.edit', 'product_item', 'product_item.add',
@@ -286,7 +289,8 @@
                     'transfer_challan.print','stock_product.barcode','stock_transfer_details'];
                 ?>
 
-                @can('purchase')
+                <!-- Purchase menu -->
+                <!-- @can('purchase')
                     <li class="treeview {{ in_array(Route::currentRouteName(), $subMenu) ? 'active' : '' }}">
                         <a href="#">
                             <i class="fa fa-circle-o text-blue"></i> <span>Purchase</span>
@@ -300,16 +304,16 @@
                                     <a href="{{ route('supplier') }}"><i class="fa fa-circle-o"></i> Supplier</a>
                                 </li>
                             @endcan
-                            <!-- @can('product_item')
+                            @can('product_item')
                                 <li class="{{ Route::currentRouteName() == 'product_color' ? 'active' : '' }}">
                                     <a href="{{ route('product_color') }}"><i class="fa fa-circle-o"></i> Product Color </a>
                                 </li>
-                            @endcan -->
-                            <!-- @can('product_item')
+                            @endcan
+                            @can('product_item')
                                 <li class="{{ Route::currentRouteName() == 'product_size' ? 'active' : '' }}">
                                     <a href="{{ route('product_size') }}"><i class="fa fa-circle-o"></i> Product Size </a>
                                 </li>
-                            @endcan -->
+                            @endcan
                             @can('product_item')
                                 <li class="{{ Route::currentRouteName() == 'product_item' ? 'active' : '' }}">
                                     <a href="{{ route('product_item') }}"><i class="fa fa-circle-o"></i> Product Model </a>
@@ -367,8 +371,9 @@
                             @endcan
                         </ul>
                     </li>
-                @endcan
+                @endcan -->
 
+                
                 <?php
                 $subMenu = ['sales_order.create', 'sale_receipt.all', 'sale_receipt.details',
                     'customer', 'customer.add', 'customer.edit','sale_receipt.payment_details',
@@ -399,11 +404,20 @@
                                 </li>
                             @endcan
                             @endif
-                            @can('sales_order')
+                            @if(Auth::user()->id != 36)
+                                @if (Auth::user()->company_branch_id == 1 || Auth::user()->company_branch_id == 2 || Auth::user()->id == 1)
+                                    @can('sales_order')
+                                        <li class="{{ Route::currentRouteName() == 'manually_chequeIn' ? 'active' : '' }}">
+                                            <a href="{{ route('manually_chequeIn') }}"><i class="fa fa-circle-o"></i> Manually Due Entry </a>
+                                        </li>
+                                    @endcan
+                                @endif
+                            @endif
+                            <!-- @can('sales_order')
                                 <li class="{{ Route::currentRouteName() == 'sales_order.create' ? 'active' : '' }}">
                                     <a href="{{ route('sales_order.create') }}"><i class="fa fa-circle-o"></i> Sales Order</a>
                                 </li>
-                            @endcan
+                            @endcan -->
 
                             <?php
                             $subSubMenu = ['sale_receipt.customer.all', 'sale_receipt.supplier.all', 'sale_receipt.details',
@@ -411,18 +425,18 @@
                                 'sale_receipt.customer.warehouse_pending.all'];
                             ?>
                             @if(Auth::user()->id != 36)
-                            @can('sale_receipt')
+                            <!-- @can('sale_receipt')
                                 <li class="{{ Route::currentRouteName() == 'sale_receipt.customer.all' ? 'active' : '' }}">
                                     <a href="{{ route('sale_receipt.customer.all') }}"><i class="fa fa-circle-o"></i> Sales Receipt </a>
                                 </li>
-                            @endcan
+                            @endcan -->
                             @endif
                             @if(Auth::user()->company_branch_id != 1 && Auth::user()->company_branch_id != 2)
-                            @can('sale_receipt')
+                            <!-- @can('sale_receipt')
                                 <li class="{{ Route::currentRouteName() == 'sale_receipt.customer.warehouse_pending.all' ? 'active' : '' }}">
                                     <a href="{{ route('sale_receipt.customer.warehouse_pending.all') }}"><i class="fa fa-circle-o"></i> Sales Receipt Pending</a>
                                 </li>
-                            @endcan
+                            @endcan -->
                             @endif
 
 {{--                            @can('sales_order')--}}
@@ -436,41 +450,32 @@
 {{--                                </li>--}}
 {{--                            @endcan--}}
 
+                            @can('sales_order')
+                                <li class="{{ Route::currentRouteName() == 'client_payment.all_pending_check' ? 'active' : '' }}">
+                                    <a href="{{ route('client_payment.all_pending_check') }}"><i class="fa fa-circle-o"></i> All Due List </a>
+                                </li>
+                            @endcan
                             @can('customer_payment')
                                 <li class="{{ Route::currentRouteName() == 'client_payment.customer.all' ? 'active' : '' }}">
                                     <a href="{{ route('client_payment.customer.all') }}"><i class="fa fa-circle-o"></i> Customer Payment </a>
                                 </li>
                             @endcan
-                            @can('sales_order')
-                                <li class="{{ Route::currentRouteName() == 'client_payment.all_pending_check' ? 'active' : '' }}">
-                                    <a href="{{ route('client_payment.all_pending_check') }}"><i class="fa fa-circle-o"></i> All Pending Cheque </a>
-                                </li>
-                            @endcan
                             @if (Auth::user()->company_branch_id == 0)
-                                @can('sales_order')
+                                <!-- @can('sales_order')
                                     <li class="{{ Route::currentRouteName() == 'client_payment.admin_pending_check' ? 'active' : '' }}">
                                         <a href="{{ route('client_payment.admin_pending_check') }}"><i class="fa fa-circle-o"></i> Admin Pending Cheque </a>
                                     </li>
-                                @endcan
-                                @can('sales_order')
+                                @endcan -->
+                                <!-- @can('sales_order')
                                     <li class="{{ Route::currentRouteName() == 'client_payment.your_choice_pending_check' ? 'active' : '' }}">
                                         <a href="{{ route('client_payment.your_choice_pending_check') }}"><i class="fa fa-circle-o"></i> Your Choice P.Cheque </a>
                                     </li>
-                                @endcan
-                                @can('sales_order')
+                                @endcan -->
+                                <!-- @can('sales_order')
                                     <li class="{{ Route::currentRouteName() == 'client_payment.your_choice_plus_pending_check' ? 'active' : '' }}">
                                         <a href="{{ route('client_payment.your_choice_plus_pending_check') }}"><i class="fa fa-circle-o"></i> Your Choice Plus P.Cheque </a>
                                     </li>
-                                @endcan
-                            @endif
-                            @if(Auth::user()->id != 36)
-                                @if (Auth::user()->company_branch_id == 1 || Auth::user()->company_branch_id == 2 || Auth::user()->id == 1)
-                                    @can('sales_order')
-                                        <li class="{{ Route::currentRouteName() == 'manually_chequeIn' ? 'active' : '' }}">
-                                            <a href="{{ route('manually_chequeIn') }}"><i class="fa fa-circle-o"></i> Manually ChequeIn </a>
-                                        </li>
-                                    @endcan
-                                @endif
+                                @endcan -->
                             @endif
 
                         </ul>
@@ -512,7 +517,8 @@
                     'transaction.all', 'transaction.add', 'transaction.details', 'balance_transfer.add'];
                 ?>
 
-                @can('accounts')
+                <!-- Accounts menu -->
+                <!-- @can('accounts')
                     <li class="treeview {{ in_array(Route::currentRouteName(), $subMenu) ? 'active' : '' }}">
                         <a href="#">
                             <i class="fa fa-circle-o text-info"></i> <span>Accounts</span>
@@ -543,7 +549,7 @@
                             @endcan
                         </ul>
                     </li>
-                @endcan
+                @endcan -->
 
                 <?php
                 $subMenu = ['report.salary.sheet','report.purchase', 'report.sale', 'report.balance_summary', 'report.sub_client_statement',
@@ -574,7 +580,7 @@
                                     <a href="{{ route('report.party_ledger') }}"><i class="fa fa-circle-o"></i> Party Ledger</a>
                                 </li>
                             @endcan
-                            @can('supplier_report')
+                            <!-- @can('supplier_report')
                                 <li class="{{ Route::currentRouteName() == 'report.supplier_statement' ? 'active' : '' }}">
                                     <a href="{{ route('report.supplier_statement') }}"><i class="fa fa-circle-o"></i> Supplier Report</a>
                                 </li>
@@ -608,28 +614,28 @@
                                 <li class="{{ Route::currentRouteName() == 'report.bill_wise_profit_loss' ? 'active' : '' }}">
                                     <a href="{{ route('report.bill_wise_profit_loss') }}"><i class="fa fa-circle-o"></i>Bill Wise Profit Loss</a>
                                 </li>
-                            @endcan
+                            @endcan -->
                             {{-- @can('ledger')
                                 <li class="{{ Route::currentRouteName() == 'report.ledger' ? 'active' : '' }}">
                                     <a href="{{ route('report.ledger') }}"><i class="fa fa-circle-o"></i> Ledger</a>
                                 </li>
                             @endcan --}}
-                             @can('price_with_stock')
+                             <!-- @can('price_with_stock')
                                 <li class="{{ Route::currentRouteName() == 'report.product_in_out' ? 'active' : '' }}">
                                     <a href="{{ route('report.product_in_out') }}"><i class="fa fa-circle-o"></i> Product in Out Report</a>
                                 </li>
-                             @endcan
-                             @can('price_with_stock')
-                                <li class="{{ Route::currentRouteName() == 'report.price.with.stock' ? 'active' : '' }}">
-                                    <a href="{{ route('report.price.with.stock') }}"><i class="fa fa-circle-o"></i> Price With Stock</a>
-                                </li>
-                            @endcan
+                             @endcan -->
+                                    <!-- @can('price_with_stock')
+                                        <li class="{{ Route::currentRouteName() == 'report.price.with.stock' ? 'active' : '' }}">
+                                            <a href="{{ route('report.price.with.stock') }}"><i class="fa fa-circle-o"></i> Price With Stock</a>
+                                        </li>
+                                    @endcan -->
                             {{-- @can('price_without_stock')
                                 <li class="{{ Route::currentRouteName() == 'report.price.without.stock' ? 'active' : '' }}">
                                     <a href="{{ route('report.price.without.stock') }}"><i class="fa fa-circle-o"></i> Price Without Stock</a>
                                 </li>
                             @endcan --}}
-                            @can('cashbook')
+                            <!-- @can('cashbook')
                                 <li class="{{ Route::currentRouteName() == 'report.cashbook' ? 'active' : '' }}">
                                     <a href="{{ route('report.cashbook') }}"><i class="fa fa-circle-o"></i> Cashbook</a>
                                 </li>
@@ -659,7 +665,7 @@
                                 <li class="{{ Route::currentRouteName() == 'report.transaction' ? 'active' : '' }}">
                                     <a href="{{ route('report.transaction') }}"><i class="fa fa-circle-o"></i> Transction Report</a>
                                 </li>
-                            @endcan
+                            @endcan -->
                         </ul>
                     </li>
                 @endcan
