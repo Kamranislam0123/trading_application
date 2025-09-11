@@ -391,7 +391,7 @@
                 @can('sale')
                     <li class="treeview {{ in_array(Route::currentRouteName(), $subMenu) ? 'active' : '' }}">
                         <a href="#">
-                            <i class="fa fa-circle-o text-info"></i> <span> Sale </span>
+                            <i class="fa fa-circle-o text-info"></i> <span> Customer Due Management </span>
                             <span class="pull-right-container">
                         <i class="fa fa-angle-left pull-right"></i>
                         </span>
@@ -575,11 +575,11 @@
                                     <a href="{{ route('report.client_statement') }}"><i class="fa fa-circle-o"></i> Client Report</a>
                                 </li>
                             @endcan
-                            @can('client_summary')
+                            <!-- @can('client_summary')
                                 <li class="{{ Route::currentRouteName() == 'report.party_ledger' ? 'active' : '' }}">
                                     <a href="{{ route('report.party_ledger') }}"><i class="fa fa-circle-o"></i> Party Ledger</a>
                                 </li>
-                            @endcan
+                            @endcan -->
                             <!-- @can('supplier_report')
                                 <li class="{{ Route::currentRouteName() == 'report.supplier_statement' ? 'active' : '' }}">
                                     <a href="{{ route('report.supplier_statement') }}"><i class="fa fa-circle-o"></i> Supplier Report</a>

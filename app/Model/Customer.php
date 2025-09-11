@@ -42,11 +42,14 @@ class Customer extends Model
             ->sum('receive_amount');
         
         $paid = $approvedPaid + $pendingReceived;
-        //$return_amount = PurchaseInventoryLog::where('customer_id', $this->id)->where('return_status', 1)->sum('sale_total');
+        
+        // Calculate return amounts (these should reduce the due amount)
         $one_return_amount = SalesOrder::where('customer_id', $this->id)->sum('return_amount');
         $two_return_amount = TransactionLog::where('customer_id', $this->id)->where('return_adjustment_amount',1)->sum('amount');
         $allReturnAmount = ($one_return_amount + $two_return_amount);
-        return ($total - $paid) + $customer->opening_due;
+        
+        // Final calculation: Due = Opening Due + Total Sales Amount - Total Received Amount - Returns
+        return ($total - $paid - $allReturnAmount) + $customer->opening_due;
     }
 
     public function getPaidAttribute() {
@@ -80,7 +83,15 @@ class Customer extends Model
     }
 
     public function getReturnAmountAttribute() {
-        return SalesOrder::where('customer_id', $this->id)->sum('return_amount');
+        // Get return amounts from sales orders
+        $salesOrderReturns = SalesOrder::where('customer_id', $this->id)->sum('return_amount');
+        
+        // Get return amounts from transaction logs (return adjustment amounts)
+        $transactionLogReturns = TransactionLog::where('customer_id', $this->id)
+            ->where('return_adjustment_amount', 1)
+            ->sum('amount');
+        
+        return $salesOrderReturns + $transactionLogReturns;
     }
 
     public function getRefundAttribute() {

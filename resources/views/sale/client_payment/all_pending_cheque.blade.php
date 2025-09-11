@@ -59,25 +59,18 @@
         
         .table-responsive::before,
         .table-responsive::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            width: 20px;
-            pointer-events: none;
-            z-index: 15;
-            transition: opacity 0.3s ease;
+            display: none !important;
         }
         
         .table-responsive::before {
             left: 0;
-            background: linear-gradient(to right, rgba(255,255,255,0.9), transparent);
+            background: linear-gradient(to right, rgba(0,0,0,0.1), transparent);
             opacity: 0;
         }
         
         .table-responsive::after {
             right: 0;
-            background: linear-gradient(to left, rgba(255,255,255,0.9), transparent);
+            background: linear-gradient(to left, rgba(0,0,0,0.1), transparent);
             opacity: 0;
         }
         
@@ -149,6 +142,22 @@
             font-size: 18px;
         }
         
+        /* Remove white shadow effects from table headers and labels */
+        .table thead th {
+            box-shadow: none !important;
+            text-shadow: none !important;
+        }
+        
+        .label {
+            box-shadow: none !important;
+            text-shadow: none !important;
+        }
+        
+        .label-warning, .label-danger {
+            box-shadow: none !important;
+            text-shadow: none !important;
+        }
+        
         #success-message .close:hover {
             opacity: 1;
         }
@@ -215,9 +224,9 @@
                 <div class="box-header with-border">
                     <h3 class="box-title">All Pending  Due Entry</h3>
                     <div class="box-tools pull-right">
-                        <small class="text-muted">
+                        <!-- <small class="text-muted">
                             <i class="fa fa-info-circle"></i> Scroll horizontally to view all columns
-                        </small>
+                        </small> -->
                     </div>
                 </div>
                 
@@ -303,6 +312,29 @@
                             </div>
                         </div>
                     @endif
+                    
+                    <!-- Entries Selection -->
+                    <div class="row" style="margin-bottom: 15px;">
+                        <div class="col-sm-6">
+                            <div class="dataTables_length" id="table_length">
+                                <label style="font-weight: normal; color: #333; margin: 0;">
+                                    Show 
+                                    <select name="table_length" aria-controls="table" class="form-control input-sm" style="display: inline-block; width: auto; margin: 0 5px; padding: 4px 8px; height: 28px; font-size: 12px; border: 1px solid #ccc; border-radius: 3px;">
+                                        <option value="10">10</option>
+                                        <option value="25">25</option>
+                                        <option value="50">50</option>
+                                        <option value="100">100</option>
+                                    </select> 
+                                    entries
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="dataTables_info" id="table_info" style="text-align: right; color: #666; font-size: 12px; padding-top: 5px;">
+                                Showing 1 to 10 of {{ $payments->total() }} entries
+                            </div>
+                        </div>
+                    </div>
                     
                     <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
                         <table id="table" class="table table-bordered table-striped">
@@ -643,24 +675,7 @@
                 clearBtn: true
             });
 
-            // Add scroll indicator
-            $('.table-responsive').on('scroll', function() {
-                var scrollLeft = $(this).scrollLeft();
-                var scrollWidth = $(this)[0].scrollWidth;
-                var clientWidth = $(this)[0].clientWidth;
-                
-                if (scrollLeft > 0) {
-                    $(this).addClass('scrolled-left');
-                } else {
-                    $(this).removeClass('scrolled-left');
-                }
-                
-                if (scrollLeft + clientWidth >= scrollWidth - 5) {
-                    $(this).addClass('scrolled-right');
-                } else {
-                    $(this).removeClass('scrolled-right');
-                }
-            });
+            // Scroll indicators disabled to fix white shadow issue
 
             var salePaymentId;
 
@@ -797,6 +812,7 @@
             // Add visual indicator for form mode
             function updateFormMode() {
                 var receiveAmount = parseFloat($('#modal-receive-amount').val()) || 0;
+                var dueAmount = parseFloat($('#modal-due-amount').val()) || 0;
                 var nextApproximateDate = $('#next_approximate_payment_date').val();
                 
                 // Remove existing mode classes
@@ -812,7 +828,14 @@
                 } else if (receiveAmount > 0) {
                     // Full payment mode - only amount provided
                     $('#modal-receive-amount').attr('required', true);
-                    $('#modal-btn-approved').text('Submit Payment').removeClass('btn-info btn-warning').addClass('btn-primary');
+                    
+                    // Check if receive amount equals due amount
+                    if (receiveAmount === dueAmount) {
+                        $('#modal-btn-approved').text('Pay').removeClass('btn-info btn-warning').addClass('btn-success');
+                    } else {
+                        $('#modal-btn-approved').text('Submit Payment').removeClass('btn-info btn-warning').addClass('btn-primary');
+                    }
+                    
                     $('#modal-pay .modal-body').addClass('payment-mode');
                 } else if (nextApproximateDate) {
                     // Date update mode - only date provided
@@ -828,7 +851,7 @@
             }
 
             // Monitor form changes to update mode
-            $('#modal-receive-amount, #next_approximate_payment_date').on('input change', updateFormMode);
+            $('#modal-receive-amount, #next_approximate_payment_date, #modal-due-amount').on('input change', updateFormMode);
 
             $('#modal-btn-approved').click(function () {
                 var receiveAmount = parseFloat($('#modal-receive-amount').val()) || 0;
@@ -970,6 +993,45 @@
                     }
                 });
             });
+        });
+
+        // Entries selection functionality
+        $(document).ready(function() {
+            var currentPage = 1;
+            var entriesPerPage = 10;
+            var totalEntries = {{ $payments->total() }};
+            var allRows = $('#table tbody tr').toArray();
+            var totalPages = Math.ceil(totalEntries / entriesPerPage);
+
+            // Function to update table display
+            function updateTableDisplay() {
+                var startIndex = (currentPage - 1) * entriesPerPage;
+                var endIndex = startIndex + entriesPerPage;
+                
+                // Hide all rows
+                $('#table tbody tr').hide();
+                
+                // Show only the rows for current page
+                for (var i = startIndex; i < endIndex && i < allRows.length; i++) {
+                    $(allRows[i]).show();
+                }
+                
+                // Update info text
+                var startEntry = startIndex + 1;
+                var endEntry = Math.min(endIndex, totalEntries);
+                $('#table_info').text('Showing ' + startEntry + ' to ' + endEntry + ' of ' + totalEntries + ' entries');
+            }
+
+            // Handle entries per page change
+            $('select[name="table_length"]').on('change', function() {
+                entriesPerPage = parseInt($(this).val());
+                currentPage = 1;
+                totalPages = Math.ceil(totalEntries / entriesPerPage);
+                updateTableDisplay();
+            });
+
+            // Initial display
+            updateTableDisplay();
         });
     </script>
 @endsection

@@ -197,7 +197,7 @@
                     </td>
                     <th width="15%">Total Amount</th>
                     <td width="15%">
-                        ৳{{ number_format($payment->total_sales_amount ?? ($payment->salesOrder->total ?? $payment->amount ?? 0), 2) }}
+                        ৳{{ number_format($payment->total_sales_amount ?? ($payment->salesOrder ? $payment->salesOrder->total : $payment->amount) ?? 0, 2) }}
                     </td>
                 </tr>
 

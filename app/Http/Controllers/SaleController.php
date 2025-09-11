@@ -534,8 +534,14 @@ class SaleController extends Controller
         if ($payment->salesOrder) {
             $payment->total_sales_amount = $payment->salesOrder->total;
         } else {
-            // If no sales order, use the existing total_sales_amount or fallback to amount
-            $payment->total_sales_amount = $payment->total_sales_amount ?? $payment->amount;
+            // If no sales order, use the existing total_sales_amount or get from customer's total
+            if ($payment->total_sales_amount) {
+                // Keep existing total_sales_amount if it exists
+                $payment->total_sales_amount = $payment->total_sales_amount;
+            } else {
+                // Get the customer's total sales amount (original total before payments/returns)
+                $payment->total_sales_amount = $payment->customer->total;
+            }
         }
         
         // Get the current due amount for this customer (from all their orders)
@@ -1080,7 +1086,7 @@ class SaleController extends Controller
         if ($isPartialPayment) {
             $message = 'Partial payment has been processed. Record will remain in due list until fully paid.';
         } else {
-            $message = 'Cheque has been completed.';
+            $message = '';
         }
         
         return response()->json(['success' => true, 'message' => $message, 'redirect_url' => route('customer_payments', ['customer_id' => $payment->customer->id])]);
