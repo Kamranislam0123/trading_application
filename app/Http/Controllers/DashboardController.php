@@ -17,6 +17,12 @@ class DashboardController extends Controller
     public function index() {
         //dd('fbf');
         if (Auth::user()->company_branch_id == 0) {
+            // New total values (all time)
+            $totalInvoiceAmount = SalesOrder::sum('total');
+            $totalReceivedAmount = SalePayment::where('type', 1)->sum('amount');
+            $totalDue = SalesOrder::sum('due');
+            
+            // Keep today's values for other calculations
             $todaySale = SalesOrder::whereDate('date', date('Y-m-d'))->sum('total');
             $todayYourChoiceSale = SalesOrder::whereDate('date', date('Y-m-d'))->where('company_branch_id', 1)->sum('total');
             $todayYourChoicePlusSale = SalesOrder::whereDate('date', date('Y-m-d'))->where('company_branch_id', 2)->sum('total');
@@ -130,6 +136,12 @@ class DashboardController extends Controller
             $recentlyProducts = PurchaseOrderProduct::take(10)->latest()->get();
 
             $data = [
+                // New total values
+                'totalInvoiceAmount' => $totalInvoiceAmount,
+                'totalReceivedAmount' => $totalReceivedAmount,
+                'totalDue' => $totalDue,
+                
+                // Keep today's values for other calculations
                 'todaySale' => $todaySale,
                 'todayYourChoiceSale' => $todayYourChoiceSale,
                 'todayYourChoicePlusSale' => $todayYourChoicePlusSale,
@@ -155,6 +167,12 @@ class DashboardController extends Controller
             ];
         }else{
             //dd('kj');
+            // New total values (all time) for branch users
+            $totalInvoiceAmount = SalesOrder::where('company_branch_id', Auth::user()->company_branch_id)->sum('total');
+            $totalReceivedAmount = SalePayment::where('company_branch_id', Auth::user()->company_branch_id)->where('type', 1)->sum('amount');
+            $totalDue = SalesOrder::where('company_branch_id', Auth::user()->company_branch_id)->sum('due');
+            
+            // Keep today's values for other calculations
             $todaySale = SalesOrder::where('company_branch_id', Auth::user()->company_branch_id)->whereDate('date', date('Y-m-d'))->sum('total');
             $todayDue = SalesOrder::where('company_branch_id', Auth::user()->company_branch_id)->whereDate('date', date('Y-m-d'))->sum('due');
             $todayDueCollection = SalePayment::whereDate('date', date('Y-m-d'))
@@ -240,6 +258,12 @@ class DashboardController extends Controller
             $recentlyProducts = PurchaseOrderProduct::take(10)->latest()->get();
 
             $data = [
+                // New total values
+                'totalInvoiceAmount' => $totalInvoiceAmount,
+                'totalReceivedAmount' => $totalReceivedAmount,
+                'totalDue' => $totalDue,
+                
+                // Keep today's values for other calculations
                 'todaySale' => $todaySale,
                 'todayDue' => $todayDue,
                 'todayDueCollection' => $todayDueCollection,

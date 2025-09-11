@@ -429,7 +429,8 @@
             //Date picker
             $('#date, #next_payment').datepicker({
                 autoclose: true,
-                format: 'yyyy-mm-dd'
+                format: 'yyyy-mm-dd',
+                todayHighlight: true
             });
 
             $('.serial').autocomplete({

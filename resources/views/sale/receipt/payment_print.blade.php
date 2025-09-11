@@ -141,7 +141,7 @@
                 </tr>
 
                 <tr>
-                    <th>Amount (In Word)</th>
+                    <th>Received Amount (In Word)</th>
                     <td colspan="3">{{ $payment->amount_in_word }}</td>
                 </tr>
 
@@ -196,7 +196,9 @@
                         ৳{{ number_format($payment->due_amount ?? 0, 2) }}
                     </td>
                     <th width="15%">Total Amount</th>
-                    <td width="15%">৳{{ number_format($payment->total_sales_amount ?? 0, 2) }}</td>
+                    <td width="15%">
+                        ৳{{ number_format($payment->total_sales_amount ?? ($payment->salesOrder->total ?? $payment->amount ?? 0), 2) }}
+                    </td>
                 </tr>
 
                 @if ($payment->status == 2)

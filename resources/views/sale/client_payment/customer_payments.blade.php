@@ -5,6 +5,7 @@
     <link rel="stylesheet" href="{{ asset('themes/backend/bower_components/datatables.net-bs/css/dataTables.bootstrap.min.css') }}">
     <!-- bootstrap datepicker -->
     <link rel="stylesheet" href="{{ asset('themes/backend/bower_components/bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css') }}">
+    
 @endsection
 
 @section('title')
@@ -71,7 +72,6 @@
                                     <td>
                                         @if ($payment->status == 1)
                                             <a class="btn btn-info btn-sm" href="{{ route('sale_receipt.payment_details', $payment->id) }}"> Voucher </a>
-                                            <a class="btn btn-warning btn-sm btn-pending" role="button" data-id="{{$payment->id}}" data-name="{{$payment->customer->name}}">Pending</a>
                                             <a class="btn btn-danger btn-sm btn-delete" role="button" data-id="{{$payment->id}}" data-customer-id="{{$payment->customer_id}}">Delete</a>
                                         @else
                                             <a class="btn btn-info btn-sm" href="{{ route('sale_receipt.payment_details', $payment->id) }}"> Voucher </a>
@@ -253,7 +253,8 @@
             //Date picker
             $('#date, #next-payment-date').datepicker({
                 autoclose: true,
-                format: 'yyyy-mm-dd'
+                format: 'yyyy-mm-dd',
+                todayHighlight: true
             });
 
             $('body').on('click', '.btn-delete', function () {

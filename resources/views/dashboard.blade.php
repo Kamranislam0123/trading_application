@@ -45,8 +45,8 @@
                 <span class="info-box-icon bg-aqua"><i class="fa fa-shopping-cart"></i></span>
 
                 <div class="info-box-content">
-                    <span class="info-box-text">Today's Total Sale</span>
-                    <span class="info-box-number">৳{{ number_format($todaySale * nbrCalculation(), 2) }}</span>
+                    <span class="info-box-text">Total Invoice Amount</span>
+                    <span class="info-box-number">৳{{ number_format($totalInvoiceAmount * nbrCalculation(), 2) }}</span>
                 </div>
                 <!-- /.info-box-content -->
             </div>
@@ -58,8 +58,8 @@
                 <span class="info-box-icon bg-red"><i class="fa fa-dollar"></i></span>
 
                 <div class="info-box-content">
-                    <span class="info-box-text">Today's Total Cash Sale</span>
-                    <span class="info-box-number">৳{{ number_format($todayCashSale * nbrCalculation(), 2) }}</span>
+                    <span class="info-box-text">Received Amount</span>
+                    <span class="info-box-number">৳{{ number_format($totalReceivedAmount * nbrCalculation(), 2) }}</span>
                 </div>
                 <!-- /.info-box-content -->
             </div>
@@ -72,8 +72,8 @@
                 <span class="info-box-icon bg-green"><i class="fa fa-star-half"></i></span>
 
                 <div class="info-box-content">
-                    <span class="info-box-text">Today's Total Due</span>
-                    <span class="info-box-number">৳{{ number_format($todayDue * nbrCalculation(), 2) }}</span>
+                    <span class="info-box-text">Total Due</span>
+                    <span class="info-box-number">৳{{ number_format($totalDue * nbrCalculation(), 2) }}</span>
                 </div>
                 <!-- /.info-box-content -->
             </div>
@@ -95,7 +95,7 @@
         </div>
         <!-- /.col -->
 
-        <div class="col-md-4 col-sm-6 col-xs-12">
+        {{-- <div class="col-md-4 col-sm-6 col-xs-12">
             <div class="info-box">
                 <span class="info-box-icon bg-aqua"><i class="fa fa-dollar"></i></span>
 
@@ -107,9 +107,9 @@
             </div>
             <!-- /.info-box -->
         </div>
-        <!-- /.col -->
+        <!-- /.col --> --}}
 
-        @if (Auth::user()->company_branch_id == 0)
+        {{-- @if (Auth::user()->company_branch_id == 0)
             <div class="col-md-4 col-sm-6 col-xs-12">
                 <div class="info-box">
                     <span style="background-color: #303d99 !important;" class="info-box-icon bg-aqua"><i class="fa fa-shopping-cart"></i></span>
@@ -249,7 +249,7 @@
                 <!-- /.info-box -->
             </div>
             <!-- /.col -->
-        @endif
+        @endif --}}
     </div>
 
     <div class="row">

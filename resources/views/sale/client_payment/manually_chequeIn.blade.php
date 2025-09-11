@@ -273,6 +273,7 @@
         //Date picker
         $('#date, #cheque_date, #next_payment_date').datepicker({
             autoclose: true,
+            todayHighlight: true,
             format: 'yyyy-mm-dd'
         });
 

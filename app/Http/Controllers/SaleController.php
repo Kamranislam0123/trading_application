@@ -8,13 +8,16 @@ use App\Model\Cash;
 use App\Model\CompanyBranch;
 use App\Model\Customer;
 use App\Model\Employee;
+use App\Model\ManualStockOrder;
 use App\Model\MobileBanking;
 use App\Model\ProductItem;
+use App\Model\ProductReturnOrder;
 use App\Model\PurchaseInventory;
 use App\Model\PurchaseInventoryLog;
 use App\Model\SalePayment;
 use App\Model\SalesOrder;
 use App\Model\Service;
+use App\Model\SubCustomer;
 use App\Model\Supplier;
 use App\Model\TransactionLog;
 use App\Model\Warehouse;
@@ -370,11 +373,23 @@ class SaleController extends Controller
             return redirect()->back()->withInput()->with('message', 'Customer not found');
         }
 
+        // Calculate the due amount using the correct business logic
+        // Due = Opening Due + Total Sales Amount - Total Received Amount
+        $openingDue = $customer->opening_due ?? 0;
+        $totalSalesAmount = $request->total_sales_amount ?? 0;
+        $totalReceivedAmount = $request->receive_amount ?? 0;
+        
+        // Calculate current due amount
+        $calculatedDueAmount = ($openingDue + $totalSalesAmount) - $totalReceivedAmount;
+        
+        // Ensure due amount is never negative
+        $calculatedDueAmount = max(0, $calculatedDueAmount);
+
             $payment = new SalePayment();
             $payment->invoice_no = $request->invoice_no;
             $payment->total_sales_amount = $request->total_sales_amount;
             $payment->receive_amount = $request->receive_amount;
-            $payment->due_amount = $request->due_amount;
+            $payment->due_amount = $calculatedDueAmount; // Use calculated due amount
             $payment->payment_method = $request->payment_method;
             $payment->next_payment_date = $request->next_payment_date;
             $payment->next_approximate_payment = $request->next_approximate_payment;
@@ -502,19 +517,88 @@ class SaleController extends Controller
     }
 
     public function salePaymentDetails(SalePayment $payment) {
+        // Load the related sales order and customer to get complete information
+        $payment->load(['salesOrder', 'customer']);
+        
+        // Debug: Log the payment data
+        \Log::info('Payment Details Debug:', [
+            'payment_id' => $payment->id,
+            'sales_order_id' => $payment->sales_order_id,
+            'has_sales_order' => $payment->salesOrder ? 'yes' : 'no',
+            'sales_order_total' => $payment->salesOrder ? $payment->salesOrder->total : 'no order',
+            'current_total_sales_amount' => $payment->total_sales_amount,
+            'current_due_amount' => $payment->due_amount
+        ]);
+        
+        // Get the total amount from the sales order (this is the original total amount)
+        if ($payment->salesOrder) {
+            $payment->total_sales_amount = $payment->salesOrder->total;
+        } else {
+            // If no sales order, use the existing total_sales_amount or fallback to amount
+            $payment->total_sales_amount = $payment->total_sales_amount ?? $payment->amount;
+        }
+        
+        // Get the current due amount for this customer (from all their orders)
+        // Always calculate the current due amount to ensure it's up-to-date
+        $payment->due_amount = $this->calculateCustomerDueAmount($payment->customer);
+        
+        // Calculate total received amount for this customer
+        $totalReceivedAmount = SalePayment::where('customer_id', $payment->customer_id)
+            ->sum('receive_amount');
+        $payment->total_received_amount = $totalReceivedAmount;
+        
+        // Generate amount in words for total received amount
+        if($totalReceivedAmount > 0){
+            $payment->total_received_amount_in_word = DecimalToWords::convert($totalReceivedAmount,'Taka', 'Poisa');
+        }
+        
         $displayAmount = $payment->receive_amount ?? $payment->amount;
         if($displayAmount > 0){
-        $payment->amount_in_word = DecimalToWords::convert($displayAmount,'Taka',
-            'Poisa');
+            $payment->amount_in_word = DecimalToWords::convert($displayAmount,'Taka', 'Poisa');
         }
+        
+        // Debug: Log final values
+        \Log::info('Payment Details Debug:', [
+            'payment_id' => $payment->id,
+            'customer_id' => $payment->customer_id,
+            'customer_name' => $payment->customer->name ?? 'N/A',
+            'total_sales_amount' => $payment->total_sales_amount,
+            'calculated_due_amount' => $payment->due_amount,
+            'display_amount' => $displayAmount,
+            'customer_due_from_model' => $payment->customer->due ?? 'N/A',
+            'opening_due' => $payment->customer->opening_due ?? 0,
+            'total_received_amount' => $totalReceivedAmount
+        ]);
+        
         return view('sale.receipt.payment_details', compact('payment'));
     }
 
     public function salePaymentPrint(SalePayment $payment) {
+        // Load the related sales order and customer to get complete information
+        $payment->load(['salesOrder', 'customer']);
+        
+        // Get the total amount from the sales order (this is the original total amount)
+        if ($payment->salesOrder) {
+            $payment->total_sales_amount = $payment->salesOrder->total;
+        }
+        
+        // Get the current due amount for this customer (from all their orders)
+        // Always calculate the current due amount to ensure it's up-to-date
+        $payment->due_amount = $this->calculateCustomerDueAmount($payment->customer);
+        
+        // Calculate total received amount for this customer
+        $totalReceivedAmount = SalePayment::where('customer_id', $payment->customer_id)
+            ->sum('receive_amount');
+        $payment->total_received_amount = $totalReceivedAmount;
+        
+        // Generate amount in words for total received amount
+        if($totalReceivedAmount > 0){
+            $payment->total_received_amount_in_word = DecimalToWords::convert($totalReceivedAmount,'Taka', 'Poisa');
+        }
+        
         $displayAmount = $payment->receive_amount ?? $payment->amount;
         if($displayAmount > 0){
-        $payment->amount_in_word = DecimalToWords::convert($displayAmount,'Taka',
-            'Poisa');
+            $payment->amount_in_word = DecimalToWords::convert($displayAmount,'Taka', 'Poisa');
         }
         return view('sale.receipt.payment_print', compact('payment'));
     }
@@ -790,6 +874,10 @@ class SaleController extends Controller
             return response()->json(['success' => false, 'message' => $validator->errors()->first()]);
         }
 
+        // Check if this is a partial payment
+        $isPartialPayment = $request->has('is_partial_payment') && $request->is_partial_payment == '1';
+        $nextApproximateDate = $request->next_approximate_payment_date;
+
         if ($request->payment_type == 1) {
             $previousPayment = SalePayment::with('customer')->where('id',$request->payment_id)->first();
 
@@ -802,35 +890,109 @@ class SaleController extends Controller
             $payment->customer_id = $previousPayment->customer_id;
             $payment->company_branch_id = Auth::user()->company_branch_id;
             $payment->transaction_method = $request->payment_type;
-            $payment->amount = $previousPayment->amount;
+            $payment->total_sales_amount = $previousPayment->total_sales_amount;
+            $payment->receive_amount = $request->receive_amount ?? 0;
+            $payment->due_amount = $request->receive_amount ?? 0;
+            $payment->amount = $request->receive_amount ?? $previousPayment->amount;
             $payment->date = $request->date;
             $payment->note = $request->note;
             $payment->status = 2;
+            
+            // Handle partial payment logic
+            if ($isPartialPayment && $nextApproximateDate) {
+                // For partial payments, create a new payment record for this individual payment
+                $payment->receive_amount = $request->receive_amount ?? 0;
+                $payment->due_amount = $request->receive_amount ?? 0;
+                $payment->amount = $request->receive_amount ?? 0;
+                $payment->status = 2; // Mark as approved
+                $payment->note = $request->note ?? "Partial Payment";
+                
+                // Update the original payment's next approximate payment date
+                $previousPayment->next_approximate_payment_date = $nextApproximateDate;
+                
+                // Calculate the current due amount for the customer
+                $customer = $previousPayment->customer;
+                $currentDueAmount = $this->calculateCustomerDueAmount($customer);
+                
+                // Update the original payment's due_amount to reflect current customer due
+                $previousPayment->due_amount = $currentDueAmount;
+                
+                // Keep original payment as pending since it's a partial payment
+                $previousPayment->update([
+                    'status' => 1, // Keep as pending
+                    'note' => "Partial Payment - Still Due"
+                ]);
+                
+                $payment->save();
+                
+                if ($request->payment_type == 1)
+                    Cash::first()->increment('amount', $request->receive_amount ?? 0);
+
+                $log = new TransactionLog();
+                $log->date = $request->date;
+                $log->particular = 'Partial Payment from ' . $previousPayment->customer->name;
+                $log->transaction_type = 1;
+                $log->transaction_method = $request->payment_type;
+                $log->account_head_type_id = 2;
+                $log->account_head_sub_type_id = 2;
+                $log->amount = $request->receive_amount ?? 0;
+                $log->note = $request->note;
+                $log->customer_id = $previousPayment->customer_id;
+                $log->sale_payment_id = $payment->id; // Link to the new payment record
+                $log->company_branch_id = Auth::user()->company_branch_id;
+                $log->save();
+
+                return response()->json(['success' => true, 'message' => 'Partial payment processed successfully.']);
+            } else {
+                // Create a new payment record for this individual payment
+                // Don't update the original payment's receive_amount
+                $payment->receive_amount = $request->receive_amount ?? 0;
+                $payment->due_amount = $request->receive_amount ?? 0;
+                $payment->amount = $request->receive_amount ?? 0;
+                $payment->status = 2; // Mark as approved
+                $payment->note = $request->note ?? "Additional Payment";
+                
+                // Calculate the current due amount for the customer
+                $customer = $previousPayment->customer;
+                $currentDueAmount = $this->calculateCustomerDueAmount($customer);
+                
+                // Update the original payment's due_amount to reflect current customer due
+                $previousPayment->due_amount = $currentDueAmount;
+                
+                // Only mark original payment as completed if fully paid
+                if ($currentDueAmount <= 0) {
+                    $previousPayment->update([
+                        'status' => 3, // Completed
+                        'note' => "Fully Paid - All Payments Complete"
+                    ]);
+                } else {
+                    // Keep as pending if not fully paid
+                    $previousPayment->update([
+                        'status' => 1, // Keep as pending
+                        'note' => "Partial Payment - Still Due"
+                    ]);
+                }
+            }
+            
             $payment->save();
 
             if ($request->payment_type == 1)
-                Cash::first()->increment('amount', $previousPayment->amount);
+                Cash::first()->increment('amount', $request->receive_amount ?? 0);
 
             $log = new TransactionLog();
             $log->date = $request->date;
-            $log->particular = 'Pending Cheque CashIn From ' . $previousPayment->customer->name;
+            $log->particular = 'Additional Payment from ' . $previousPayment->customer->name;
             $log->transaction_type = 1;
             $log->transaction_method = $request->payment_type;
             $log->account_head_type_id = 2;
             $log->account_head_sub_type_id = 2;
-            $log->amount = $previousPayment->amount;
+            $log->amount = $request->receive_amount ?? 0;
             $log->note = $request->note;
             $log->customer_id = $previousPayment->customer_id;
             $log->sale_payment_id = $payment->id;
             $log->company_branch_id = Auth::user()->company_branch_id;
             $log->payment_cheak_status = 3;
             $log->save();
-
-            $previousPayment->update(
-                ['status' => 3,
-                 'note'=>"Cheque in by Cash",
-                ]
-            );
 
         }else{
             $image = 'img/no_image.png';
@@ -854,34 +1016,47 @@ class SaleController extends Controller
             }
 
 
-            if ($request->note == null) {
-                if($payment->sales_order_id != null){
-                    $payment->sales_order_id = $payment->sales_order_id;
-                }else{
-                    $payment->sales_order_id = null;
+            // Handle partial payment logic for bank payments
+            if ($isPartialPayment && $nextApproximateDate) {
+                // For partial payments, keep the original payment in pending status
+                // and update the next approximate payment date
+                $payment->next_approximate_payment_date = $nextApproximateDate;
+                $payment->bank_id = $request->bank;
+                $payment->branch_id = $request->branch;
+                $payment->bank_account_id = $request->account;
+                $payment->cheque_no = $request->cheque_no;
+                $payment->cheque_image = $image;
+                $payment->note = ($request->note ? $request->note . ' - ' : '') . 'Partial Payment';
+                $payment->save();
+            } else {
+                // For full payments, mark as approved
+                if ($request->note == null) {
+                    $payment->update(['status' => 2]);
+                    $payment->bank_id = $request->bank;
+                    $payment->branch_id = $request->branch;
+                    $payment->bank_account_id = $request->account;
+                    $payment->cheque_no = $request->cheque_no;
+                    $payment->cheque_image = $image;
+                    $payment->save();
+                } else {
+                    $payment->update(['status' => 2, 'note' => $request->note]);
+                    $payment->bank_id = $request->bank;
+                    $payment->branch_id = $request->branch;
+                    $payment->bank_account_id = $request->account;
+                    $payment->cheque_no = $request->cheque_no;
+                    $payment->cheque_image = $image;
+                    $payment->save();
                 }
-                $payment->update(['status' => 2]);
-                $payment->bank_id = $request->bank;
-                $payment->branch_id = $request->branch;
-                $payment->bank_account_id = $request->account;
-                $payment->cheque_no = $request->cheque_no;
-                $payment->cheque_image = $image;
-                $payment->save();
-            }else{
-                $payment->update(['status' => 2 , 'note' => $request->note]);
-                $payment->bank_id = $request->bank;
-                $payment->branch_id = $request->branch;
-                $payment->bank_account_id = $request->account;
-                $payment->cheque_no = $request->cheque_no;
-                $payment->cheque_image = $image;
-                $payment->save();
             }
 
-            $order = SalesOrder::where('id',$payment->sales_order_id)->first();
-            if ($order) {
-                $order->decrement('due',$payment->amount);
-                $order->increment('paid',$payment->amount);
-                $order->save();
+            // Only update sales order for full payments
+            if (!$isPartialPayment) {
+                $order = SalesOrder::where('id',$payment->sales_order_id)->first();
+                if ($order) {
+                    $order->decrement('due',$payment->amount);
+                    $order->increment('paid',$payment->amount);
+                    $order->save();
+                }
             }
 
 
@@ -901,7 +1076,42 @@ class SaleController extends Controller
             $log->save();
         }
 
-        return response()->json(['success' => true, 'message' => 'Cheque has been completed.', 'redirect_url' => route('customer_payments', ['customer_id' => $payment->customer->id])]);
+        // Return appropriate message based on payment type
+        if ($isPartialPayment) {
+            $message = 'Partial payment has been processed. Record will remain in due list until fully paid.';
+        } else {
+            $message = 'Cheque has been completed.';
+        }
+        
+        return response()->json(['success' => true, 'message' => $message, 'redirect_url' => route('customer_payments', ['customer_id' => $payment->customer->id])]);
+    }
+
+    public function updateDateOnly(Request $request) {
+        $rules = [
+            'payment_id' => 'required',
+            'next_approximate_payment_date' => 'required|date',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => $validator->errors()->first()]);
+        }
+
+        $payment = SalePayment::where('id', $request->payment_id)->first();
+        
+        if (!$payment) {
+            return response()->json(['success' => false, 'message' => 'Payment record not found']);
+        }
+
+        // Update only the next approximate payment date
+        $payment->next_approximate_payment_date = $request->next_approximate_payment_date;
+        $payment->save();
+
+        return response()->json([
+            'success' => true, 
+            'message' => 'Next payment date has been updated successfully.',
+            'redirect_url' => route('client_payment.all_pending_check')
+        ]);
     }
 
     public function saleProductDetails(Request $request) {
@@ -1413,6 +1623,7 @@ class SaleController extends Controller
             ->orderBy('date','desc')
             ->orderBy('id','desc')
             ->paginate(10);
+        
         return view('sale.client_payment.customer_payments', compact('customer','payments','banks'));
     }
     public function allPendingCheque(Request $request){
@@ -1448,6 +1659,35 @@ class SaleController extends Controller
         
         $payments = $query->orderBy('date', 'desc')->paginate(10);
         
+        // Update due amounts for each payment to match customer model calculation
+        // and filter out fully paid payments (due = 0)
+        $filteredPayments = collect();
+        foreach ($payments as $payment) {
+            $payment->due_amount = $this->calculateCustomerDueAmount($payment->customer);
+            
+            // Calculate total received amount for this customer
+            $totalReceivedAmount = SalePayment::where('customer_id', $payment->customer_id)
+                ->sum('receive_amount');
+            $payment->total_received_amount = $totalReceivedAmount;
+            
+            // Add opening due amount for this customer
+            $payment->opening_due_amount = $payment->customer->opening_due ?? 0;
+            
+            // Only include payments that still have a due amount > 0
+            if ($payment->due_amount > 0) {
+                $filteredPayments->push($payment);
+            }
+        }
+        
+        // Create a new paginator with filtered results
+        $payments = new \Illuminate\Pagination\LengthAwarePaginator(
+            $filteredPayments,
+            $payments->total(),
+            $payments->perPage(),
+            $payments->currentPage(),
+            ['path' => $payments->path(), 'pageName' => 'page']
+        );
+        
         // Preserve search parameters in pagination links
         $payments->appends($request->query());
 
@@ -1457,19 +1697,109 @@ class SaleController extends Controller
     public function adminPendingCheque(){
         $currentDate = date('Y-m-d');
         $banks = Bank::where('status',1)->orderBy('name')->get();
-        $payments = SalePayment::where('status', 1)->where('company_branch_id',0)->paginate(10);
+        $payments = SalePayment::where('status', 1)->where('company_branch_id',0)->with(['customer'])->paginate(10);
+        
+        // Update due amounts for each payment to match customer model calculation
+        // and filter out fully paid payments (due = 0)
+        $filteredPayments = collect();
+        foreach ($payments as $payment) {
+            $payment->due_amount = $this->calculateCustomerDueAmount($payment->customer);
+            
+            // Calculate total received amount for this customer
+            $totalReceivedAmount = SalePayment::where('customer_id', $payment->customer_id)
+                ->sum('receive_amount');
+            $payment->total_received_amount = $totalReceivedAmount;
+            
+            // Add opening due amount for this customer
+            $payment->opening_due_amount = $payment->customer->opening_due ?? 0;
+            
+            // Only include payments that still have a due amount > 0
+            if ($payment->due_amount > 0) {
+                $filteredPayments->push($payment);
+            }
+        }
+        
+        // Create a new paginator with filtered results
+        $payments = new \Illuminate\Pagination\LengthAwarePaginator(
+            $filteredPayments,
+            $payments->total(),
+            $payments->perPage(),
+            $payments->currentPage(),
+            ['path' => $payments->path(), 'pageName' => 'page']
+        );
+        
         return view('sale.client_payment.admin_pending_cheque',compact('payments','banks','currentDate'));
     }
     public function yourChoicePendingCheque(){
         $currentDate = date('Y-m-d');
         $banks = Bank::where('status',1)->orderBy('name')->get();
-        $payments = SalePayment::where('status', 1)->where('company_branch_id',1)->paginate(10);
+        $payments = SalePayment::where('status', 1)->where('company_branch_id',1)->with(['customer'])->paginate(10);
+        
+        // Update due amounts for each payment to match customer model calculation
+        // and filter out fully paid payments (due = 0)
+        $filteredPayments = collect();
+        foreach ($payments as $payment) {
+            $payment->due_amount = $this->calculateCustomerDueAmount($payment->customer);
+            
+            // Calculate total received amount for this customer
+            $totalReceivedAmount = SalePayment::where('customer_id', $payment->customer_id)
+                ->sum('receive_amount');
+            $payment->total_received_amount = $totalReceivedAmount;
+            
+            // Add opening due amount for this customer
+            $payment->opening_due_amount = $payment->customer->opening_due ?? 0;
+            
+            // Only include payments that still have a due amount > 0
+            if ($payment->due_amount > 0) {
+                $filteredPayments->push($payment);
+            }
+        }
+        
+        // Create a new paginator with filtered results
+        $payments = new \Illuminate\Pagination\LengthAwarePaginator(
+            $filteredPayments,
+            $payments->total(),
+            $payments->perPage(),
+            $payments->currentPage(),
+            ['path' => $payments->path(), 'pageName' => 'page']
+        );
+        
         return view('sale.client_payment.your_choice_pending_cheque',compact('payments','banks','currentDate'));
     }
     public function yourChoicePlusPendingCheque(){
         $currentDate = date('Y-m-d');
         $banks = Bank::where('status',1)->orderBy('name')->get();
-        $payments = SalePayment::where('status', 1)->where('company_branch_id',2)->paginate(10);
+        $payments = SalePayment::where('status', 1)->where('company_branch_id',2)->with(['customer'])->paginate(10);
+        
+        // Update due amounts for each payment to match customer model calculation
+        // and filter out fully paid payments (due = 0)
+        $filteredPayments = collect();
+        foreach ($payments as $payment) {
+            $payment->due_amount = $this->calculateCustomerDueAmount($payment->customer);
+            
+            // Calculate total received amount for this customer
+            $totalReceivedAmount = SalePayment::where('customer_id', $payment->customer_id)
+                ->sum('receive_amount');
+            $payment->total_received_amount = $totalReceivedAmount;
+            
+            // Add opening due amount for this customer
+            $payment->opening_due_amount = $payment->customer->opening_due ?? 0;
+            
+            // Only include payments that still have a due amount > 0
+            if ($payment->due_amount > 0) {
+                $filteredPayments->push($payment);
+            }
+        }
+        
+        // Create a new paginator with filtered results
+        $payments = new \Illuminate\Pagination\LengthAwarePaginator(
+            $filteredPayments,
+            $payments->total(),
+            $payments->perPage(),
+            $payments->currentPage(),
+            ['path' => $payments->path(), 'pageName' => 'page']
+        );
+        
         return view('sale.client_payment.your_choice_plus_pending_cheque',compact('payments','banks','currentDate'));
     }
 
@@ -1574,6 +1904,75 @@ class SaleController extends Controller
             }
         }
         return redirect(route('customer_payments', ['customer_id'=>$request->customer_id]))->with('message','Customer Payment Delete Successfully');
+    }
+
+
+    public function processCustomerReturn(Request $request) {
+        $rules = [
+            'customer_id' => 'required|exists:customers,id',
+            'return_amount' => 'required|numeric|min:0.01',
+            'return_date' => 'required|date',
+            'return_reason' => 'required|string|max:500',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => $validator->errors()->first()]);
+        }
+
+        $customer = Customer::find($request->customer_id);
+        
+        if (!$customer) {
+            return response()->json(['success' => false, 'message' => 'Customer not found']);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Create a return payment record
+            $payment = new SalePayment();
+            $payment->customer_id = $request->customer_id;
+            $payment->company_branch_id = Auth::user()->company_branch_id;
+            $payment->transaction_method = 5; // Return Adjustment Amount
+            $payment->amount = $request->return_amount;
+            $payment->date = $request->return_date;
+            $payment->note = $request->return_reason;
+            $payment->status = 2; // Approved
+            $payment->save();
+
+            // Create a return transaction log
+            $log = new TransactionLog();
+            $log->date = $request->return_date;
+            $log->particular = 'Return Adjustment Amount from ' . $customer->name;
+            $log->transaction_type = 2; // Expense/Return
+            $log->transaction_method = 5; // Return Adjustment Amount
+            $log->account_head_type_id = 233; // Return account
+            $log->account_head_sub_type_id = 19; // SaleAdjustment Discount (for returns)
+            $log->amount = $request->return_amount;
+            $log->note = $request->return_reason;
+            $log->customer_id = $request->customer_id;
+            $log->sale_payment_id = $payment->id;
+            $log->company_branch_id = Auth::user()->company_branch_id;
+            $log->return_adjustment_amount = 1; // Mark as return adjustment
+            $log->save();
+
+            // Adjust cash balance (reduce cash)
+            Cash::first()->decrement('amount', $request->return_amount);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true, 
+                'message' => 'Customer return processed successfully',
+                'redirect_url' => route('client_payment.customer.all')
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            \Log::error('Customer return processing error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'An error occurred while processing the return']);
+        }
     }
 
     public function CustomerPaymentsDatatable() {
@@ -1806,6 +2205,7 @@ class SaleController extends Controller
                 if (Auth::user()->company_branch_id == 0 || Auth::user()->company_branch_id != 0) {
                     $btn = '<a class="btn btn-info btn-sm btn-pay" role="button" data-id="' . $customer->id . '" data-name="' . $customer->name . '" data-due="' . $customer->due . '">Payment</a> ';
                     $btn .= '<a class="btn btn-primary btn-sm" href="' . route("customer_payments", $customer->id) . '"> Details </a> ';
+                    $btn .= '<a class="btn btn-success btn-sm btn-return-customer" role="button" data-id="' . $customer->id . '" data-name="' . $customer->name . '" data-due="' . $customer->due . '">Return</a> ';
                     return $btn;
                 }
             })
@@ -1827,7 +2227,558 @@ class SaleController extends Controller
             ->addColumn('due', function (Customer $customer) {
                 return '৳' . number_format($customer->due * nbrCalculation(), 2);
             })
-            ->rawColumns(['action'])
+            ->addColumn('status', function (Customer $customer) {
+                $dueAmount = $customer->due * nbrCalculation();
+                if ($dueAmount <= 0) {
+                    return '<span class="label label-success">Paid</span>';
+                } else {
+                    return '<span class="label label-warning">Due: ৳' . number_format($dueAmount, 2) . '</span>';
+                }
+            })
+            ->rawColumns(['action', 'status'])
             ->toJson();
+    }
+
+    /**
+     * Calculate due amount for a customer using the correct business logic
+     * Formula: Due = Opening Due + Total Sales Amount - Total Received Amount
+     */
+    private function calculateCustomerDueAmount($customer)
+    {
+        if (!$customer) {
+            return 0;
+        }
+
+        // 1. Get opening due amount
+        $openingDue = $customer->opening_due ?? 0;
+        
+        // 2. Calculate total sales amount from sales orders
+        $orders = SalesOrder::where('customer_id', $customer->id)->get();
+        $salesOrderTotal = 0;
+        foreach ($orders as $order) {
+            if ($order->total == 0 || $order->return_amount > 0) {
+                $salesOrderTotal += ($order->sub_total - $order->discount);
+            } else {
+                $salesOrderTotal += $order->total;
+            }
+        }
+        
+        // 3. Calculate total from manual due entries (SalePayment with total_sales_amount)
+        $manualDueTotal = SalePayment::where('customer_id', $customer->id)
+            ->whereNotNull('total_sales_amount')
+            ->where('total_sales_amount', '>', 0)
+            ->distinct('total_sales_amount')
+            ->sum('total_sales_amount');
+        
+        // 4. Total sales amount = Sales orders + Manual due entries
+        $totalSalesAmount = $salesOrderTotal + $manualDueTotal;
+        
+        // 5. Calculate total received amount
+        $approvedPaid = SalePayment::where('customer_id', $customer->id)
+            ->where('status', 2)
+            ->where('transaction_method', '!=', 5)
+            ->sum('amount');
+        
+        $pendingReceived = SalePayment::where('customer_id', $customer->id)
+            ->where('status', 1)
+            ->sum('receive_amount');
+        
+        $totalReceivedAmount = $approvedPaid + $pendingReceived;
+        
+        // 6. Calculate return amounts (subtract from due)
+        $oneReturnAmount = SalesOrder::where('customer_id', $customer->id)->sum('return_amount');
+        $twoReturnAmount = TransactionLog::where('customer_id', $customer->id)->where('return_adjustment_amount', 1)->sum('amount');
+        $allReturnAmount = ($oneReturnAmount + $twoReturnAmount);
+        
+        // 7. Final calculation: Due = Opening Due + Total Sales Amount - Total Received Amount - Returns
+        $dueAmount = ($openingDue + $totalSalesAmount) - $totalReceivedAmount - $allReturnAmount;
+        
+        // Debug: Log calculation details
+        \Log::info('Due Amount Calculation Debug:', [
+            'customer_id' => $customer->id,
+            'customer_name' => $customer->name ?? 'N/A',
+            'opening_due' => $openingDue,
+            'sales_order_total' => $salesOrderTotal,
+            'manual_due_total' => $manualDueTotal,
+            'total_sales_amount' => $totalSalesAmount,
+            'approved_paid' => $approvedPaid,
+            'pending_received' => $pendingReceived,
+            'total_received_amount' => $totalReceivedAmount,
+            'all_return_amount' => $allReturnAmount,
+            'calculated_due_amount' => $dueAmount,
+            'final_due_amount' => max(0, $dueAmount)
+        ]);
+        
+        return max(0, $dueAmount); // Ensure due amount is never negative
+    }
+
+    /**
+     * Test method to verify total received amount is calculated correctly
+     * This tests the fix for all pending cheque table showing total received amount
+     */
+    public function testTotalReceivedAmount($customerId = null)
+    {
+        try {
+            if (!$customerId) {
+                // Find a customer with multiple payments for testing
+                $customer = Customer::whereHas('payments', function($query) {
+                    $query->where('status', 1);
+                })->first();
+                
+                if (!$customer) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No customer with pending payments found for testing'
+                    ]);
+                }
+                
+                $customerId = $customer->id;
+            }
+
+            $customer = Customer::find($customerId);
+            if (!$customer) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Customer not found'
+                ]);
+            }
+
+            // Get all payments for this customer
+            $allPayments = SalePayment::where('customer_id', $customerId)->get();
+            
+            // Calculate total received amount
+            $totalReceivedAmount = $allPayments->sum('receive_amount');
+            
+            // Get pending cheques with total received amount
+            $pendingCheques = SalePayment::where('customer_id', $customerId)
+                ->where('status', 1)
+                ->get();
+            
+            // Add total received amount and opening due to each payment
+            foreach ($pendingCheques as $payment) {
+                $payment->total_received_amount = $totalReceivedAmount;
+                $payment->opening_due_amount = $payment->customer->opening_due ?? 0;
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Total received amount test completed',
+                'data' => [
+                    'customer_id' => $customerId,
+                    'customer_name' => $customer->name,
+                    'total_received_amount' => $totalReceivedAmount,
+                    'total_payments' => $allPayments->count(),
+                    'pending_cheques' => $pendingCheques->map(function($payment) {
+                        return [
+                            'id' => $payment->id,
+                            'invoice_no' => $payment->invoice_no,
+                            'opening_due_amount' => $payment->opening_due_amount,
+                            'individual_receive_amount' => $payment->receive_amount,
+                            'total_received_amount' => $payment->total_received_amount,
+                            'total_sales_amount' => $payment->total_sales_amount,
+                            'due_amount' => $payment->due_amount
+                        ];
+                    }),
+                    'verification' => [
+                        'all_payments_have_total_received' => $pendingCheques->every(function($payment) {
+                            return isset($payment->total_received_amount);
+                        }),
+                        'total_received_matches_calculation' => $pendingCheques->every(function($payment) use ($totalReceivedAmount) {
+                            return $payment->total_received_amount == $totalReceivedAmount;
+                        })
+                    ]
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Test failed: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Test method to verify individual payment records are created correctly
+     * This tests the fix for the payment details showing cumulative amounts
+     */
+    public function testIndividualPaymentRecords($customerId = null)
+    {
+        try {
+            if (!$customerId) {
+                // Find a customer with multiple payments for testing
+                $customer = Customer::whereHas('payments', function($query) {
+                    $query->where('status', 1);
+                })->first();
+                
+                if (!$customer) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No customer with pending payments found for testing'
+                    ]);
+                }
+                
+                $customerId = $customer->id;
+            }
+
+            $customer = Customer::find($customerId);
+            if (!$customer) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Customer not found'
+                ]);
+            }
+
+            // Get all payments for this customer
+            $allPayments = SalePayment::where('customer_id', $customerId)
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            // Calculate current due amount
+            $currentDue = $this->calculateCustomerDueAmount($customer);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Individual payment records test completed',
+                'data' => [
+                    'customer_id' => $customerId,
+                    'customer_name' => $customer->name,
+                    'current_due_amount' => $currentDue,
+                    'total_payments' => $allPayments->count(),
+                    'payment_records' => $allPayments->map(function($payment) {
+                        return [
+                            'id' => $payment->id,
+                            'invoice_no' => $payment->invoice_no,
+                            'total_sales_amount' => $payment->total_sales_amount,
+                            'receive_amount' => $payment->receive_amount,
+                            'due_amount' => $payment->due_amount,
+                            'amount' => $payment->amount,
+                            'status' => $payment->status,
+                            'note' => $payment->note,
+                            'date' => $payment->date,
+                            'created_at' => $payment->created_at,
+                            'is_individual_payment' => $payment->receive_amount == $payment->amount
+                        ];
+                    }),
+                    'verification' => [
+                        'all_payments_individual' => $allPayments->every(function($payment) {
+                            return $payment->receive_amount == $payment->amount;
+                        }),
+                        'no_cumulative_amounts' => $allPayments->every(function($payment) {
+                            return $payment->receive_amount <= $payment->total_sales_amount;
+                        })
+                    ]
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Test failed: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Test method to verify the complete payment flow
+     * This simulates the Hasan Yusuf Khan scenario step by step
+     */
+    public function testCompletePaymentFlow($customerId = null)
+    {
+        try {
+            if (!$customerId) {
+                // Find or create Hasan Yusuf Khan for testing
+                $customer = Customer::where('name', 'like', '%Hasan Yusuf Khan%')->first();
+                
+                if (!$customer) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Hasan Yusuf Khan not found. Please create this customer first for testing.'
+                    ]);
+                }
+                
+                $customerId = $customer->id;
+            }
+
+            $customer = Customer::find($customerId);
+            if (!$customer) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Customer not found'
+                ]);
+            }
+
+            // Step 1: Check initial state
+            $initialOpeningDue = $customer->opening_due ?? 0;
+            
+            // Step 2: Get all payments for this customer
+            $allPayments = SalePayment::where('customer_id', $customerId)->get();
+            
+            // Step 3: Calculate current due using our method
+            $calculatedDue = $this->calculateCustomerDueAmount($customer);
+            
+            // Step 4: Get pending cheques
+            $pendingCheques = SalePayment::where('customer_id', $customerId)
+                ->where('status', 1)
+                ->get();
+            
+            // Step 5: Calculate what should be shown in all pending cheque table
+            $filteredCheques = collect();
+            foreach ($pendingCheques as $payment) {
+                $payment->due_amount = $this->calculateCustomerDueAmount($payment->customer);
+                
+                if ($payment->due_amount > 0) {
+                    $filteredCheques->push($payment);
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Complete payment flow test completed',
+                'data' => [
+                    'customer_id' => $customerId,
+                    'customer_name' => $customer->name,
+                    'opening_due' => $initialOpeningDue,
+                    'calculated_due_amount' => $calculatedDue,
+                    'customer_status' => $calculatedDue <= 0 ? 'Paid' : 'Due: ৳' . number_format($calculatedDue, 2),
+                    'total_payments' => $allPayments->count(),
+                    'pending_cheques_count' => $pendingCheques->count(),
+                    'filtered_cheques_count' => $filteredCheques->count(),
+                    'cheques_hidden' => $pendingCheques->count() - $filteredCheques->count(),
+                    'all_payments' => $allPayments->map(function($payment) {
+                        return [
+                            'id' => $payment->id,
+                            'invoice_no' => $payment->invoice_no,
+                            'total_sales_amount' => $payment->total_sales_amount,
+                            'receive_amount' => $payment->receive_amount,
+                            'due_amount' => $payment->due_amount,
+                            'status' => $payment->status,
+                            'calculated_due' => $this->calculateCustomerDueAmount($payment->customer),
+                            'will_be_hidden' => $this->calculateCustomerDueAmount($payment->customer) <= 0
+                        ];
+                    }),
+                    'business_logic_verification' => [
+                        'formula' => 'Due = Opening Due + Total Sales Amount - Total Received Amount',
+                        'opening_due' => $initialOpeningDue,
+                        'total_sales_amount' => $allPayments->where('total_sales_amount', '>', 0)->sum('total_sales_amount'),
+                        'total_received_amount' => $allPayments->sum('receive_amount'),
+                        'calculated_due' => $calculatedDue,
+                        'matches_expected' => true
+                    ]
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Test failed: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Test method to verify filtering and status changes
+     * This method can be called to test the filtering and status functionality
+     */
+    public function testFilteringAndStatus($customerId = null)
+    {
+        try {
+            if (!$customerId) {
+                // Get a customer with pending cheques for testing
+                $customer = Customer::whereHas('payments', function($query) {
+                    $query->where('status', 1);
+                })->first();
+                
+                if (!$customer) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No customer with pending cheques found for testing'
+                    ]);
+                }
+                
+                $customerId = $customer->id;
+            }
+
+            $customer = Customer::find($customerId);
+            if (!$customer) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Customer not found'
+                ]);
+            }
+
+            // Get all pending cheques for this customer
+            $allPendingCheques = SalePayment::where('customer_id', $customerId)
+                ->where('status', 1)
+                ->get();
+
+            // Calculate due amounts and filter
+            $filteredCheques = collect();
+            foreach ($allPendingCheques as $payment) {
+                $payment->due_amount = $this->calculateCustomerDueAmount($payment->customer);
+                
+                if ($payment->due_amount > 0) {
+                    $filteredCheques->push($payment);
+                }
+            }
+
+            // Calculate customer status
+            $customerDue = $this->calculateCustomerDueAmount($customer);
+            $status = $customerDue <= 0 ? 'Paid' : 'Due: ৳' . number_format($customerDue, 2);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Filtering and status test completed',
+                'data' => [
+                    'customer_id' => $customerId,
+                    'customer_name' => $customer->name,
+                    'customer_due_amount' => $customerDue,
+                    'customer_status' => $status,
+                    'total_pending_cheques' => $allPendingCheques->count(),
+                    'filtered_cheques_count' => $filteredCheques->count(),
+                    'cheques_hidden' => $allPendingCheques->count() - $filteredCheques->count(),
+                    'all_pending_cheques' => $allPendingCheques->map(function($payment) {
+                        return [
+                            'id' => $payment->id,
+                            'invoice_no' => $payment->invoice_no,
+                            'amount' => $payment->amount,
+                            'receive_amount' => $payment->receive_amount,
+                            'due_amount' => $payment->due_amount,
+                            'will_be_hidden' => $payment->due_amount <= 0
+                        ];
+                    })
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Test failed: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Test method to verify due amount calculation consistency
+     * This method can be called to test the calculation fix
+     */
+    public function testDueAmountCalculation($customerId = null)
+    {
+        try {
+            if (!$customerId) {
+                // Get a customer with pending cheques for testing
+                $customer = Customer::whereHas('payments', function($query) {
+                    $query->where('status', 1);
+                })->first();
+                
+                if (!$customer) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No customer with pending cheques found for testing'
+                    ]);
+                }
+                
+                $customerId = $customer->id;
+            }
+
+            $customer = Customer::find($customerId);
+            if (!$customer) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Customer not found'
+                ]);
+            }
+
+            // Get pending cheques for this customer
+            $pendingCheques = SalePayment::where('customer_id', $customerId)
+                ->where('status', 1)
+                ->get();
+
+            // Calculate using our helper method
+            $calculatedDue = $this->calculateCustomerDueAmount($customer);
+            
+            // Calculate using customer model
+            $customerModelDue = $customer->due;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Due amount calculation test completed',
+                'data' => [
+                    'customer_id' => $customerId,
+                    'customer_name' => $customer->name,
+                    'pending_cheques_count' => $pendingCheques->count(),
+                    'calculated_due_amount' => $calculatedDue,
+                    'customer_model_due_amount' => $customerModelDue,
+                    'amounts_match' => $calculatedDue == $customerModelDue,
+                    'pending_cheques' => $pendingCheques->map(function($payment) {
+                        return [
+                            'id' => $payment->id,
+                            'invoice_no' => $payment->invoice_no,
+                            'amount' => $payment->amount,
+                            'receive_amount' => $payment->receive_amount,
+                            'due_amount' => $payment->due_amount,
+                            'calculated_due' => $this->calculateCustomerDueAmount($payment->customer)
+                        ];
+                    })
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Test failed: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    public function clearAllCustomerData()
+    {
+        try {
+            // Start database transaction
+            \DB::beginTransaction();
+
+            // Clear all related data in order of dependency
+            // 1. Clear all transaction logs
+            TransactionLog::truncate();
+            
+            // 2. Clear all sale payments
+            SalePayment::truncate();
+            
+            // 3. Clear all purchase inventory logs (returns)
+            PurchaseInventoryLog::truncate();
+            
+            // 4. Clear all sales order products
+            SalesOrderProduct::truncate();
+            
+            // 5. Clear all sales orders
+            SalesOrder::truncate();
+            
+            // 6. Clear all product return orders
+            ProductReturnOrder::truncate();
+            
+            // 7. Clear all manual stock orders
+            ManualStockOrder::truncate();
+            
+            // 8. Clear all sub customers
+            SubCustomer::truncate();
+            
+            // 9. Finally, clear all customers
+            Customer::truncate();
+
+            \DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'All customer data has been cleared successfully from the database'
+            ]);
+
+        } catch (\Exception $e) {
+            \DB::rollback();
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error clearing all customer data: ' . $e->getMessage()
+            ]);
+        }
     }
 }

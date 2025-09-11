@@ -183,7 +183,8 @@
             //Date picker
             $('#date, #next-payment-date').datepicker({
                 autoclose: true,
-                format: 'yyyy-mm-dd'
+                format: 'yyyy-mm-dd',
+                todayHighlight: true
             });
 
             $('body').on('click', '.btn-pay', function () {
