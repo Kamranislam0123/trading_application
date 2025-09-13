@@ -229,21 +229,21 @@ class HRController extends Controller
             'permanent_address' => 'required|string|max:255',
             'religion' => 'required',
             'cv' => 'nullable|mimes:doc,pdf,docx',
-            'bank_name' => 'nullable|max:255',
-            'bank_branch' => 'nullable|max:255',
-            'bank_account' => 'nullable|max:255',
+            // 'bank_name' => 'nullable|max:255',
+            // 'bank_branch' => 'nullable|max:255',
+            // 'bank_account' => 'nullable|max:255',
             Rule::unique('employees')->ignore($employee->id),
 
         ]);
 
         // Update User Info 
         $user = User::where('id', $employee->user_id)->first();
-        $user->name = $request->name;
-        $user->email = $request->email;
-        if ($request->password !='') {
-            $user->password = bcrypt($request->password);
-        }
-        $user->save();
+        // $user->name = $request->name;
+        // $user->email = $request->email;
+        // if ($request->password !='') {
+        //     $user->password = bcrypt($request->password);
+        // }
+        // $user->save();
 
         $signature = $employee->signature;
         if ($request->signature) {

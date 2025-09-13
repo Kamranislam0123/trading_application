@@ -15,8 +15,8 @@
 
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="author" content="Md. Al Arfin (Rokon)-01729890904">
-    <title> {{ config('app.name', 'Datascape Trading') }} </title>
+    <meta name="author" content="Juyel Islam Shah 01744711278">
+    <title> {{ config('app.name', 'AT International') }} </title>
 
     <!--Favicon-->
     <link rel="icon" href="{{ asset('img/favicon.ico') }}" type="image/x-icon" />
@@ -160,7 +160,7 @@
                     'bank_account', 'bank_account.add', 'bank_account.edit','cash'];
                 ?>
 
-                @can('bank_and_account')
+                <!-- @can('bank_and_account')
                     <li class="treeview {{ in_array(Route::currentRouteName(), $subMenu) ? 'active' : '' }}">
                         <a href="#">
                             <i class="fa fa-circle-o text-blue"></i> <span> Bank & Account </span>
@@ -191,7 +191,7 @@
                             @endcan
                         </ul>
                     </li>
-                @endcan
+                @endcan -->
 
                 <?php
                     $subMenu = ['department','department.add','department.edit','designation','designation.add','designation.edit','employee.all', 'employee.add', 'employee.edit', 'employee.details','employee.attendance','report.employee_list'];
@@ -488,7 +488,7 @@
                     'product_return_invoice.all','return_invoice.details'];
                 ?>
 
-                @can('administrator')
+                <!-- @can('administrator')
                     <li class="treeview {{ in_array(Route::currentRouteName(), $subMenu) ? 'active' : '' }}">
                         <a href="#">
                             <i class="fa fa-circle-o text-info"></i> <span> Sales Return  </span>
@@ -509,7 +509,7 @@
                             @endcan
                         </ul>
                     </li>
-                @endcan
+                @endcan -->
 
                 <?php
                 $subMenu = ['account_head.type', 'account_head.type.add', 'account_head.type.edit',

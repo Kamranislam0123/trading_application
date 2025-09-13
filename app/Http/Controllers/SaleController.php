@@ -1630,6 +1630,14 @@ class SaleController extends Controller
             ->orderBy('id','desc')
             ->paginate(10);
         
+        // Calculate customer-wise total due amount for display
+        $customer->total_due_amount = $this->calculateCustomerDueAmount($customer);
+        
+        // Add customer-wise due amount to each payment for display purposes
+        foreach ($payments as $payment) {
+            $payment->customer_total_due = $customer->total_due_amount;
+        }
+        
         return view('sale.client_payment.customer_payments', compact('customer','payments','banks'));
     }
     public function allPendingCheque(Request $request){
@@ -1665,16 +1673,21 @@ class SaleController extends Controller
         
         $payments = $query->orderBy('date', 'desc')->paginate(10);
         
-        // Update due amounts for each payment to match customer model calculation
+        // Update amounts for each payment to show invoice-wise amounts
         // and filter out fully paid payments (due = 0)
         $filteredPayments = collect();
         foreach ($payments as $payment) {
-            $payment->due_amount = $this->calculateCustomerDueAmount($payment->customer);
+            // Calculate invoice-wise amounts for this specific payment/invoice
+            $invoiceAmounts = $this->calculateInvoiceAmounts($payment);
             
-            // Calculate total received amount for this customer
-            $totalReceivedAmount = SalePayment::where('customer_id', $payment->customer_id)
-                ->sum('receive_amount');
-            $payment->total_received_amount = $totalReceivedAmount;
+            // Set invoice-wise due amount
+            $payment->due_amount = $invoiceAmounts['due_amount'];
+            
+            // Set invoice-wise received amount
+            $payment->total_received_amount = $invoiceAmounts['received_amount'];
+            
+            // Set invoice-wise total sales amount
+            $payment->total_sales_amount = $invoiceAmounts['invoice_amount'];
             
             // Add opening due amount for this customer
             $payment->opening_due_amount = $payment->customer->opening_due ?? 0;
@@ -2216,33 +2229,104 @@ class SaleController extends Controller
                 }
             })
             ->addColumn('total', function (Customer $customer) {
-                return '৳' . number_format($customer->total * nbrCalculation(), 2);
+                return number_format($customer->total * nbrCalculation(), 2);
             })
             ->addColumn('return', function (Customer $customer) {
-                return '৳' . number_format($customer->return_amount * nbrCalculation(), 2);
+                return number_format($customer->return_amount * nbrCalculation(), 2);
             })
             ->addColumn('opening_due', function (Customer $customer) {
-                return '৳' . number_format($customer->opening_due * nbrCalculation(), 2);
+                return number_format($customer->opening_due * nbrCalculation(), 2);
             })
             ->addColumn('branch', function (Customer $customer) {
                 return $customer->branch->name??'';
             })
             ->addColumn('paid', function (Customer $customer) {
-                return '৳' . number_format($customer->paid * nbrCalculation(), 2);
+                return number_format($customer->paid * nbrCalculation(), 2);
             })
             ->addColumn('due', function (Customer $customer) {
-                return '৳' . number_format($customer->due * nbrCalculation(), 2);
+                return number_format($customer->due * nbrCalculation(), 2);
             })
             ->addColumn('status', function (Customer $customer) {
                 $dueAmount = $customer->due * nbrCalculation();
                 if ($dueAmount <= 0) {
                     return '<span class="label label-success">Paid</span>';
                 } else {
-                    return '<span class="label label-warning">Due: ৳' . number_format($dueAmount, 2) . '</span>';
+                    return '<span class="label label-warning">Due: ' . number_format($dueAmount, 2) . '</span>';
                 }
             })
             ->rawColumns(['action', 'status'])
             ->toJson();
+    }
+
+    /**
+     * Calculate the due amount and received amount for a specific invoice/payment record
+     * This is used in all-pending-cheque to show invoice-wise amounts
+     */
+    private function calculateInvoiceAmounts($payment)
+    {
+        if (!$payment) {
+            return [
+                'due_amount' => 0,
+                'received_amount' => 0,
+                'invoice_amount' => 0
+            ];
+        }
+
+        // For invoice-wise calculation, we need to consider:
+        // 1. The specific invoice amount (total_sales_amount)
+        // 2. Payments made specifically for this invoice
+        // 3. Any returns for this specific invoice
+
+        $invoiceAmount = $payment->total_sales_amount ?? 0;
+        
+        // If this payment has a sales order, use the sales order total
+        if ($payment->salesOrder) {
+            $invoiceAmount = $payment->salesOrder->total;
+        }
+        
+        // Calculate payments made for this specific invoice
+        $paymentsForThisInvoice = SalePayment::where('customer_id', $payment->customer_id)
+            ->where('invoice_no', $payment->invoice_no)
+            ->where('status', 2) // Only approved payments
+            ->where('transaction_method', '!=', 5)
+            ->sum('amount');
+        
+        // Add pending received amount for this specific invoice
+        $pendingForThisInvoice = SalePayment::where('customer_id', $payment->customer_id)
+            ->where('invoice_no', $payment->invoice_no)
+            ->where('status', 1) // Pending payments
+            ->sum('receive_amount');
+        
+        $totalReceivedForInvoice = $paymentsForThisInvoice + $pendingForThisInvoice;
+        
+        // Calculate returns for this specific invoice (if any)
+        $returnsForInvoice = 0;
+        if ($payment->salesOrder) {
+            $returnsForInvoice = $payment->salesOrder->return_amount ?? 0;
+        }
+        
+        // Invoice due = Invoice amount - Payments made - Returns
+        $invoiceDue = $invoiceAmount - $totalReceivedForInvoice - $returnsForInvoice;
+        
+        // Debug: Log calculation details
+        \Log::info('Invoice Amounts Calculation Debug:', [
+            'payment_id' => $payment->id,
+            'invoice_no' => $payment->invoice_no,
+            'customer_id' => $payment->customer_id,
+            'invoice_amount' => $invoiceAmount,
+            'payments_for_invoice' => $paymentsForThisInvoice,
+            'pending_for_invoice' => $pendingForThisInvoice,
+            'total_received_for_invoice' => $totalReceivedForInvoice,
+            'returns_for_invoice' => $returnsForInvoice,
+            'calculated_invoice_due' => $invoiceDue,
+            'final_invoice_due' => max(0, $invoiceDue)
+        ]);
+        
+        return [
+            'due_amount' => max(0, $invoiceDue), // Ensure due amount is never negative
+            'received_amount' => $totalReceivedForInvoice,
+            'invoice_amount' => $invoiceAmount
+        ];
     }
 
     /**

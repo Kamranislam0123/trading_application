@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Model\Customer;
 use App\Model\PurchaseOrder;
 use App\Model\PurchaseOrderProduct;
 use App\Model\SalePayment;
@@ -18,9 +19,22 @@ class DashboardController extends Controller
         //dd('fbf');
         if (Auth::user()->company_branch_id == 0) {
             // New total values (all time)
-            $totalInvoiceAmount = SalesOrder::sum('total');
+            // Calculate total invoice amount as sum of all total amounts from due list
+            $salesOrderTotal = SalesOrder::sum('total');
+            $manualDueTotal = SalePayment::whereNotNull('total_sales_amount')
+                ->where('total_sales_amount', '>', 0)
+                ->distinct('total_sales_amount')
+                ->sum('total_sales_amount');
+            $totalInvoiceAmount = $salesOrderTotal + $manualDueTotal;
+            
             $totalReceivedAmount = SalePayment::where('type', 1)->sum('amount');
-            $totalDue = SalesOrder::sum('due');
+            
+            // Calculate total due amount by summing all customer due amounts
+            $customers = Customer::where('status', 1)->get();
+            $totalDue = 0;
+            foreach ($customers as $customer) {
+                $totalDue += $customer->due;
+            }
             
             // Keep today's values for other calculations
             $todaySale = SalesOrder::whereDate('date', date('Y-m-d'))->sum('total');
@@ -135,6 +149,32 @@ class DashboardController extends Controller
             // Recently Added Product
             $recentlyProducts = PurchaseOrderProduct::take(10)->latest()->get();
 
+            // Get pending cheques for all branches
+            $pendingCheques = SalePayment::where('status', 1)
+                ->with(['customer', 'salesPerson'])
+                ->orderBy('date', 'desc')
+                ->take(20)
+                ->get();
+
+            // Update due amounts for each payment
+            $filteredPendingCheques = collect();
+            foreach ($pendingCheques as $payment) {
+                $payment->due_amount = $this->calculateCustomerDueAmount($payment->customer);
+                
+                // Calculate total received amount for this customer
+                $totalReceivedAmount = SalePayment::where('customer_id', $payment->customer_id)
+                    ->sum('receive_amount');
+                $payment->total_received_amount = $totalReceivedAmount;
+                
+                // Add opening due amount for this customer
+                $payment->opening_due_amount = $payment->customer->opening_due ?? 0;
+                
+                // Only include payments that still have a due amount > 0
+                if ($payment->due_amount > 0) {
+                    $filteredPendingCheques->push($payment);
+                }
+            }
+
             $data = [
                 // New total values
                 'totalInvoiceAmount' => $totalInvoiceAmount,
@@ -163,14 +203,29 @@ class DashboardController extends Controller
                 'saleAmount' => json_encode($saleAmount),
                 'orderCount' => json_encode($orderCount),
                 'bestSellingProducts' => $bestSellingProducts,
-                'recentlyProducts' => $recentlyProducts
+                'recentlyProducts' => $recentlyProducts,
+                'pendingCheques' => $filteredPendingCheques
             ];
         }else{
             //dd('kj');
             // New total values (all time) for branch users
-            $totalInvoiceAmount = SalesOrder::where('company_branch_id', Auth::user()->company_branch_id)->sum('total');
+            // Calculate total invoice amount as sum of all total amounts from due list
+            $salesOrderTotal = SalesOrder::where('company_branch_id', Auth::user()->company_branch_id)->sum('total');
+            $manualDueTotal = SalePayment::where('company_branch_id', Auth::user()->company_branch_id)
+                ->whereNotNull('total_sales_amount')
+                ->where('total_sales_amount', '>', 0)
+                ->distinct('total_sales_amount')
+                ->sum('total_sales_amount');
+            $totalInvoiceAmount = $salesOrderTotal + $manualDueTotal;
+            
             $totalReceivedAmount = SalePayment::where('company_branch_id', Auth::user()->company_branch_id)->where('type', 1)->sum('amount');
-            $totalDue = SalesOrder::where('company_branch_id', Auth::user()->company_branch_id)->sum('due');
+            
+            // Calculate total due amount by summing all customer due amounts for this branch
+            $customers = Customer::where('status', 1)->where('company_branch_id', Auth::user()->company_branch_id)->get();
+            $totalDue = 0;
+            foreach ($customers as $customer) {
+                $totalDue += $customer->due;
+            }
             
             // Keep today's values for other calculations
             $todaySale = SalesOrder::where('company_branch_id', Auth::user()->company_branch_id)->whereDate('date', date('Y-m-d'))->sum('total');
@@ -257,6 +312,33 @@ class DashboardController extends Controller
             // Recently Added Product
             $recentlyProducts = PurchaseOrderProduct::take(10)->latest()->get();
 
+            // Get pending cheques for this branch
+            $pendingCheques = SalePayment::where('status', 1)
+                ->where('company_branch_id', Auth::user()->company_branch_id)
+                ->with(['customer', 'salesPerson'])
+                ->orderBy('date', 'desc')
+                ->take(20)
+                ->get();
+
+            // Update due amounts for each payment
+            $filteredPendingCheques = collect();
+            foreach ($pendingCheques as $payment) {
+                $payment->due_amount = $this->calculateCustomerDueAmount($payment->customer);
+                
+                // Calculate total received amount for this customer
+                $totalReceivedAmount = SalePayment::where('customer_id', $payment->customer_id)
+                    ->sum('receive_amount');
+                $payment->total_received_amount = $totalReceivedAmount;
+                
+                // Add opening due amount for this customer
+                $payment->opening_due_amount = $payment->customer->opening_due ?? 0;
+                
+                // Only include payments that still have a due amount > 0
+                if ($payment->due_amount > 0) {
+                    $filteredPendingCheques->push($payment);
+                }
+            }
+
             $data = [
                 // New total values
                 'totalInvoiceAmount' => $totalInvoiceAmount,
@@ -275,10 +357,64 @@ class DashboardController extends Controller
                 'saleAmount' => json_encode($saleAmount),
                 'orderCount' => json_encode($orderCount),
                 'bestSellingProducts' => $bestSellingProducts,
-                'recentlyProducts' => $recentlyProducts
+                'recentlyProducts' => $recentlyProducts,
+                'pendingCheques' => $filteredPendingCheques
             ];
         }
 
         return view('dashboard', $data);
+    }
+
+    private function calculateCustomerDueAmount($customer)
+    {
+        if (!$customer) {
+            return 0;
+        }
+
+        // 1. Get opening due amount
+        $openingDue = $customer->opening_due ?? 0;
+        
+        // 2. Calculate total sales amount from sales orders
+        $orders = SalesOrder::where('customer_id', $customer->id)->get();
+        $salesOrderTotal = 0;
+        foreach ($orders as $order) {
+            if ($order->total == 0 || $order->return_amount > 0) {
+                $salesOrderTotal += ($order->sub_total - $order->discount);
+            } else {
+                $salesOrderTotal += $order->total;
+            }
+        }
+        
+        // 3. Calculate total from manual due entries (SalePayment with total_sales_amount)
+        $manualDueTotal = SalePayment::where('customer_id', $customer->id)
+            ->whereNotNull('total_sales_amount')
+            ->where('total_sales_amount', '>', 0)
+            ->distinct('total_sales_amount')
+            ->sum('total_sales_amount');
+        
+        // 4. Total sales amount = Sales orders + Manual due entries
+        $totalSalesAmount = $salesOrderTotal + $manualDueTotal;
+        
+        // 5. Calculate total received amount
+        $approvedPaid = SalePayment::where('customer_id', $customer->id)
+            ->where('status', 2)
+            ->where('transaction_method', '!=', 5)
+            ->sum('amount');
+        
+        $pendingReceived = SalePayment::where('customer_id', $customer->id)
+            ->where('status', 1)
+            ->sum('receive_amount');
+        
+        $totalReceivedAmount = $approvedPaid + $pendingReceived;
+        
+        // 6. Calculate return amounts (subtract from due)
+        $oneReturnAmount = SalesOrder::where('customer_id', $customer->id)->sum('return_amount');
+        $twoReturnAmount = TransactionLog::where('customer_id', $customer->id)->where('return_adjustment_amount', 1)->sum('amount');
+        $allReturnAmount = ($oneReturnAmount + $twoReturnAmount);
+        
+        // 7. Final calculation: Due = Opening Due + Total Sales Amount - Total Received Amount - Returns
+        $dueAmount = ($openingDue + $totalSalesAmount) - $totalReceivedAmount - $allReturnAmount;
+        
+        return $dueAmount;
     }
 }

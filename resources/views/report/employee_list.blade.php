@@ -50,23 +50,23 @@
                         <div style="padding:10px; width:100%; text-align:center;">
                             @if (Auth::user()->company_branch_id == 1)
 
-                                <h2>{{ config('app.name', 'Your Choice') }}</h2>
+                                <!-- <h2>{{ config('app.name', 'Your Choice') }}</h2> -->
+                                <h2>AT International</h2>
                                 <p style="margin: 0px; font-size: 16px; text-align:center">
-                                    Shop# 20-21, Fubaria Super Market-1 (1st Floor)Dhaka-1000<br>
-                                    Phone : +8802223381027,, Mobile : 01591-148251(MANAGER)<br>
-                                    EMAIL:YOURCHOICE940@YAHOO.COM<br>
-                                    HELPLINE: IT DEPARTMENT,,,,MD.PORAN BHUYAIN<br>
-                                    MOBILE:01985-511918
+                                House 07, road 25 (parise road), Block D, Mirpur 10<br>
+                                    Phone : 01725838784<br>
+                                    EMAIL:jimnadvir@gmail.com<br>
+                                   
                                 </p>
                             @elseif (Auth::user()->company_branch_id == 2)
-                                <h2>Your Choice Plus</h2>
+                                <!-- <h2>Your Choice Plus</h2>
                                 <p style="margin: 0px; text-align:center">
                                     Shop# 23-24, Fubaria Super Market-1 (2nd Floor)Dhaka-1000,<br>
                                     Mobile : 01876-864470(Manager)<br>
                                     EMAIL:YOURCHOICE940@YAHOO.COM<br>
                                     HELPLINE: IT DEPARTMENT,,,,MD.PORAN BHUYAIN<br>
                                     MOBILE: 01985-511918
-                                </p>
+                                </p> -->
                             @endif
                         </div>
                          <table id="table" class="table table-bordered table-striped">

@@ -18,6 +18,7 @@
             max-width: 120px;
             max-height: 80px;
             object-fit: contain;
+            border-radius: 50%;
         }
 
         .document-title {
@@ -80,12 +81,20 @@
                     <!-- Header Section -->
                     <div class="row header-section">
                         <div class="col-xs-4">
+                            <div style="margin-bottom: 10px;">
+                                @if (Auth::user()->company_branch_id == 2)
+                                    <img src="{{ asset('img/your_choice_plus.png') }}" class="company-logo" alt="Your Choice Plus">
+                                @else
+                                    <img src="{{ asset('img/Silvia-logo-final.jpg') }}" class="company-logo" alt="Your Choice">
+                                @endif
+                            </div>
                             <div class="company-details">
                                 <p><strong>AT International</strong></p>
-                                <p>Company Address</p>
-                                <p>City, Country</p>
-                                <p>Phone: +880-XXX-XXX-XXX</p>
-                                <p>Email: info@atinternational.com</p>
+                                <p>House 07, road 25 (parise road), Block D, Mirpur 10</p>
+                                <p>Dhaka, Bangladesh</p>
+                                <p>Phone: +8801725838784</p>
+                                <p>Email: jimnadvir@gmail.com
+                                </p>
                             </div>
                         </div>
                         
@@ -94,13 +103,6 @@
                         </div>
                         
                         <div class="col-xs-4 text-right">
-                            <div style="margin-bottom: 10px;">
-                                @if (Auth::user()->company_branch_id == 2)
-                                    <img src="{{ asset('img/your_choice_plus.png') }}" class="company-logo" alt="Your Choice Plus">
-                                @else
-                                    <img src="{{ asset('img/logo.png') }}" class="company-logo" alt="Your Choice">
-                                @endif
-                            </div>
                             <div class="company-details">
                                 <p><strong>{{ $payment->customer->name ?? 'Customer Name' }}</strong></p>
                                 <p>{{ $payment->customer->address ?? 'Customer Address' }}</p>

@@ -3,27 +3,25 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Model\Customer;
 use App\Model\SalePayment;
 use App\Model\TransactionLog;
-use App\Model\SalesOrder;
 use Illuminate\Support\Facades\DB;
 
-class ClearCustomerPaymentData extends Command
+class ClearPaymentData extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'clear:customer-payment-data';
+    protected $signature = 'clear:payment-data';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Clear all customer payment related data including customers, sales orders, sale payments, and transaction logs';
+    protected $description = 'Clear all payment details data including sale payments and transaction logs';
 
     /**
      * Create a new command instance.
@@ -42,7 +40,7 @@ class ClearCustomerPaymentData extends Command
      */
     public function handle()
     {
-        $this->info('Starting to clear customer payment related data...');
+        $this->info('Starting to clear payment details data...');
 
         try {
             DB::beginTransaction();
@@ -59,23 +57,10 @@ class ClearCustomerPaymentData extends Command
             TransactionLog::truncate();
             $this->info("Cleared {$transactionLogCount} records from transaction_logs table.");
 
-            // Clear sales_orders table
-            $this->info('Clearing sales_orders table...');
-            $salesOrderCount = SalesOrder::count();
-            SalesOrder::truncate();
-            $this->info("Cleared {$salesOrderCount} records from sales_orders table.");
-
-            // Clear customers table
-            $this->info('Clearing customers table...');
-            $customerCount = Customer::count();
-            Customer::truncate();
-            $this->info("Cleared {$customerCount} records from customers table.");
-
             // Commit transaction
             DB::commit();
 
-            $this->info('Successfully cleared all customer payment related data!');
-            $this->info('Cleared tables: customers, sales_orders, sale_payments, transaction_logs');
+            $this->info('Successfully cleared all payment details data!');
 
         } catch (\Exception $e) {
             // Rollback transaction on error

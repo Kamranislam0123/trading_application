@@ -7,8 +7,73 @@
     <link rel="stylesheet" href="{{ asset('themes/backend/bower_components/bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css') }}">
 
     <style>
-        .logo-pad img{
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            margin: 0;
+            padding: 20px;
+        }
 
+        .header-section {
+            margin-bottom: 30px;
+        }
+
+        .company-logo {
+            max-width: 120px;
+            max-height: 80px;
+            object-fit: contain;
+            margin-left: 20px;
+            border-radius: 50%;
+        }
+
+        .document-title {
+            font-size: 24px;
+            font-weight: bold;
+            text-decoration: underline;
+            margin: 0;
+            padding: 10px 0;
+        }
+
+        .company-details {
+            font-size: 11px;
+            line-height: 1.3;
+            margin-top: 40px;
+            padding-bottom: 10px;
+        }
+
+        .company-details p {
+            margin: 2px 0;
+        }
+
+        .table-bordered>thead>tr>th, .table-bordered>tbody>tr>th, .table-bordered>tfoot>tr>th, .table-bordered>thead>tr>td, .table-bordered>tbody>tr>td, .table-bordered>tfoot>tr>td {
+            border: 1px solid black !important;
+            padding: 8px !important;
+            font-size: 12px;
+        }
+
+        .signature-section {
+            margin-top: 40px;
+        }
+
+        .signature-line {
+            border-top: 1px solid black;
+            width: 200px;
+            margin-top: 50px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 11px;
+            padding-top: 5px;
+        }
+
+        /* Hide print buttons when printing */
+        @media print {
+            .print-buttons {
+                display: none !important;
+            }
+            body {
+                padding: 10px;
+            }
         }
     </style>
 @endsection
@@ -75,14 +140,31 @@
                     <div id="prinarea">
 
                         <div class="row">
-                            <div class="col-xs-12">
+                            <!-- <div class="col-xs-12">
                                 @if (Auth::user()->company_branch_id == 2)
                                     <img src="{{ asset('img/your_choice_plus.png') }}"style="margin-top: 10px; float:inherit">
                                 @else
                                     <img src="{{ asset('img/your_choice.png') }}"style="margin-top: 10px; float:inherit">
                                 @endif
-                            </div>
+                            </div> -->
+
+                            <div style="margin-bottom: 10px;">
+                @if (Auth::user()->company_branch_id == 2)
+                    <img src="{{ asset('img/Silvia-logo-final.jpg') }}" class="company-logo" alt="Your Choice Plus">
+                @else
+                    <img src="{{ asset('img/Silvia-logo-final.jpg') }}" class="company-logo" alt="Your Choice">
+                @endif
+            </div>
                         </div>
+
+                        <div class="company-details">
+                                <p><strong>AT International</strong></p>
+                                <p>House 07, road 25 (parise road), Block D, Mirpur 10</p>
+                                <p>Dhaka, Bangladesh</p>
+                                <p>Phone: +8801725838784</p>
+                                <p>Email: jimnadvir@gmail.com
+                                </p>
+                            </div>
 {{--                        <div class="logo-pad">--}}
 {{--                            <img src="{{ asset('img/logo.png') }}" style="position: absolute;opacity: 0.1;height: 553px;width: 650px;margin-top: 130px;margin-left: 65px;">--}}
 {{--                        </div>--}}
