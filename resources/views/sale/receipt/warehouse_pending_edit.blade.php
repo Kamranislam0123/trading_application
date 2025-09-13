@@ -555,7 +555,8 @@
             //Date picker
             $('#date, #next_payment,#cheque_date').datepicker({
                 autoclose: true,
-                format: 'yyyy-mm-dd'
+                format: 'yyyy-mm-dd',
+                todayHighlight: true
             });
 
             $('#modal-pay-type').change(function () {

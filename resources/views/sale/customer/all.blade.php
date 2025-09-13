@@ -32,7 +32,7 @@
                             <th> Name </th>
                             <th> Address </th>
                             <th> Mobile </th>
-                            <th> Branch </th>
+                            {{-- <th> Branch </th> --}}
                             <th> Opening Due </th>
                             <th> Status </th>
                             <th> Action </th>
@@ -62,12 +62,13 @@
                     {data: 'name', name: 'name'},
                     {data: 'address', name: 'address'},
                     {data: 'mobile_no', name: 'mobile_no'},
-                    {data: 'branch_status', name: 'branch_status'},
+                    {{-- {data: 'branch_status', name: 'branch_status'}, --}}
                     {data: 'opening_due', name: 'opening_due'},
                     {data: 'status', name: 'status', searchable:false},
                     {data: 'action', name: 'action', orderable: false},
                 ],
             });
+
         })
     </script>
 @endsection

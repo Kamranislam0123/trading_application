@@ -311,6 +311,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('client-payment/customer', 'SaleController@clientPaymentCustomer')->name('client_payment.customer.all')->middleware('permission:customer_payment');
     Route::get('client-payment/customer/datatable', 'SaleController@clientPaymentCustomerDatatable')->name('client_payment.customer.datatable')->middleware('permission:customer_payment');
     Route::get('customer-payments/{customer_id}', 'SaleController@customerPayments')->name('customer_payments');
+    Route::post('customer/clear-all-data', 'SaleController@clearAllCustomerData')->name('customer.clear_all_data')->middleware('permission:customer');
     Route::get('all-pending-cheque', 'SaleController@allPendingCheque')->name('client_payment.all_pending_check');
     Route::get('admin-pending-cheque', 'SaleController@adminPendingCheque')->name('client_payment.admin_pending_check');
     Route::get('your-choice-pending-cheque', 'SaleController@yourChoicePendingCheque')->name('client_payment.your_choice_pending_check');
@@ -318,6 +319,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('manually-cheque-in', 'SaleController@manuallyChequeIn')->name('manually_chequeIn');
     Route::post('manually-cheque-in', 'SaleController@manuallyChequeInPost');
     Route::post('cheque-approved', 'SaleController@chequeApproved')->name('client_cheque.approved');
+    Route::post('client-payment/update-date-only', 'SaleController@updateDateOnly')->name('client_payment.update_date_only');
     Route::post('pending/cheque/delete', 'SaleController@pendingChequeDelete')->name('pending_cheque.delete');
     Route::get('customer-payments/datatable', 'SaleController@CustomerPaymentsDatatable')->name('customer_payments.datatable');
     Route::get('client-payment/supplier', 'SaleController@clientPaymentSupplier')->name('client_payment.supplier.all')->middleware('permission:customer_payment');
@@ -328,6 +330,12 @@ Route::middleware(['auth'])->group(function () {
     Route::post('client-voucher/delete', 'SaleController@voucherDelete')->name('payment_voucher.delete')->middleware('permission:customer_payment');
 
     Route::post('client-payment/voucher', 'SaleController@voucherUpdate')->name('client_payment.voucher_update')->middleware('permission:customer_payment');
+    Route::post('client-payment/return-customer', 'SaleController@processCustomerReturn')->name('client_payment.return_customer')->middleware('permission:customer_payment');
+    Route::get('test-due-amount-calculation/{customer_id?}', 'SaleController@testDueAmountCalculation')->name('test_due_amount_calculation');
+    Route::get('test-filtering-and-status/{customer_id?}', 'SaleController@testFilteringAndStatus')->name('test_filtering_and_status');
+    Route::get('test-complete-payment-flow/{customer_id?}', 'SaleController@testCompletePaymentFlow')->name('test_complete_payment_flow');
+    Route::get('test-individual-payment-records/{customer_id?}', 'SaleController@testIndividualPaymentRecords')->name('test_individual_payment_records');
+    Route::get('test-total-received-amount/{customer_id?}', 'SaleController@testTotalReceivedAmount')->name('test_total_received_amount');
 
 
     // Account Head Type

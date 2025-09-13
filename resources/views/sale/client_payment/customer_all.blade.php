@@ -9,6 +9,20 @@
     <link rel="stylesheet" href="{{ asset('themes/backend/bower_components/bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css') }}">
     <style>
         .select2{width:100% !important;}
+        .label {
+            font-size: 11px;
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 3px;
+        }
+        .label-success {
+            background-color: #5cb85c;
+            color: white;
+        }
+        .label-warning {
+            background-color: #f0ad4e;
+            color: white;
+        }
     </style>
 @endsection
 
@@ -34,12 +48,13 @@
                             <th>Name</th>
                             <th>Address</th>
                             <th>Mobile</th>
-                            <th>Branch</th>
+                            {{-- <th>Branch</th> --}}
                             <th>Opening Due</th>
                             <th>Total</th>
                             <th>Return</th>
                             <th>Paid</th>
                             <th>Due</th>
+                            <th>Status</th>
                             <th>Action</th>
                         </tr>
                         </thead>
@@ -149,6 +164,62 @@
         <!-- /.modal-dialog -->
     </div>
     <!-- /.modal -->
+
+    <!-- Return Modal -->
+    <div class="modal fade" id="modal-return-customer">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">Return Payment</h4>
+                </div>
+                <div class="modal-body">
+                    <form id="modal-form-return-customer" enctype="multipart/form-data" name="modal-form-return-customer">
+                        <input type="hidden" name="customer_id" id="customer_id_return_customer">
+                        
+                        <div class="form-group">
+                            <label>Customer Name</label>
+                            <input class="form-control" id="customer_name_return_customer" disabled>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Customer Due Amount</label>
+                            <input class="form-control" id="customer_due_return_customer" disabled>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Return Amount <span class="text-danger">*</span></label>
+                            <input class="form-control" name="return_amount" id="return_amount_customer" placeholder="Enter Return Amount" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Return Date <span class="text-danger">*</span></label>
+                            <div class="input-group date">
+                                <div class="input-group-addon">
+                                    <i class="fa fa-calendar"></i>
+                                </div>
+                                <input type="text" class="form-control pull-right" id="return_date_customer" name="return_date"
+                                       value="{{ date('Y-m-d') }}" autocomplete="off" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Return Reason <span class="text-danger">*</span></label>
+                            <textarea class="form-control" name="return_reason" id="return_reason_customer" placeholder="Enter return reason" rows="3" required></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default pull-left" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-success" id="modal-btn-return-customer">Process Return</button>
+                </div>
+            </div>
+            <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+    </div>
+    <!-- /.modal -->
 @endsection
 
 @section('script')
@@ -173,12 +244,13 @@
                     {data: 'name', name: 'name'},
                     {data: 'address', name: 'address'},
                     {data: 'mobile_no', name: 'mobile_no'},
-                    {data: 'branch', name: 'branch'},
+                    {{-- {data: 'branch', name: 'branch'}, --}}
                     {data: 'opening_due', name: 'opening_due', orderable: false},
                     {data: 'total', name: 'total', orderable: false},
                     {data: 'return', name: 'return', orderable: false},
                     {data: 'paid', name: 'paid', orderable: false},
                     {data: 'due', name: 'due', orderable: false},
+                    {data: 'status', name: 'status', orderable: false},
                     {data: 'action', name: 'action', orderable: false},
                 ],
             });
@@ -186,9 +258,10 @@
             $('.select2').select2();
 
             //Date picker
-            $('#date, #next-payment-date').datepicker({
+            $('#date, #next-payment-date, #return_date_customer').datepicker({
                 autoclose: true,
-                format: 'yyyy-mm-dd'
+                format: 'yyyy-mm-dd',
+                todayHighlight: true
             });
 
             $('body').on('click', '.btn-pay', function () {
@@ -346,6 +419,84 @@
             checkNextPayment();
             $('#amount').keyup(function () {
                 checkNextPayment();
+            });
+
+            // Return functionality for customer table
+            $('body').on('click', '.btn-return-customer', function () {
+                var customerId = $(this).data('id');
+                var customerName = $(this).data('name');
+                var customerDue = $(this).data('due');
+                
+                $('#customer_id_return_customer').val(customerId);
+                $('#customer_name_return_customer').val(customerName);
+                $('#customer_due_return_customer').val(customerDue);
+                $('#return_amount_customer').val('');
+                $('#return_reason_customer').val('');
+                $('#modal-return-customer').modal('show');
+            });
+
+            $('#modal-btn-return-customer').click(function () {
+                var formData = new FormData($('#modal-form-return-customer')[0]);
+                var returnAmount = parseFloat($('#return_amount_customer').val());
+
+                // Validate return amount
+                if (returnAmount <= 0) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid Amount',
+                        text: 'Return amount must be greater than 0',
+                    });
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "You are about to process a return of ৳" + returnAmount.toFixed(2),
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, Process Return'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            type: "POST",
+                            url: "{{ route('client_payment.return_customer') }}",
+                            data: formData,
+                            processData: false,
+                            contentType: false,
+                            success: function(response) {
+                                if (response.success) {
+                                    $('#modal-return-customer').modal('hide');
+                                    Swal.fire(
+                                        'Return Processed!',
+                                        response.message,
+                                        'success'
+                                    ).then((result) => {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Oops...',
+                                        text: response.message,
+                                    });
+                                }
+                            },
+                            error: function(xhr) {
+                                var errorMessage = 'An error occurred while processing the return';
+                                if (xhr.responseJSON && xhr.responseJSON.message) {
+                                    errorMessage = xhr.responseJSON.message;
+                                }
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: errorMessage,
+                                });
+                            }
+                        });
+                    }
+                });
             });
         });
 

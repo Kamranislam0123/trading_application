@@ -238,7 +238,8 @@
             //Date picker
             $('#date, #next-payment-date').datepicker({
                 autoclose: true,
-                format: 'yyyy-mm-dd'
+                format: 'yyyy-mm-dd',
+                todayHighlight: true
             });
 
             var salePaymentId;

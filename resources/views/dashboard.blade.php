@@ -45,21 +45,25 @@
                 <span class="info-box-icon bg-aqua"><i class="fa fa-shopping-cart"></i></span>
 
                 <div class="info-box-content">
-                    <span class="info-box-text">Today's Total Sale</span>
-                    <span class="info-box-number">৳{{ number_format($todaySale * nbrCalculation(), 2) }}</span>
+                    <span class="info-box-text">Total Invoice Amount</span>
+                    <span class="info-box-number">৳{{ number_format($totalInvoiceAmount * nbrCalculation(), 2) }}</span>
                 </div>
+                
                 <!-- /.info-box-content -->
             </div>
             <!-- /.info-box -->
         </div>
+
+
+        
         <!-- /.col -->
         <div class="col-md-4 col-sm-6 col-xs-12">
             <div class="info-box">
                 <span class="info-box-icon bg-red"><i class="fa fa-dollar"></i></span>
 
                 <div class="info-box-content">
-                    <span class="info-box-text">Today's Total Cash Sale</span>
-                    <span class="info-box-number">৳{{ number_format($todayCashSale * nbrCalculation(), 2) }}</span>
+                    <span class="info-box-text">Received Amount</span>
+                    <span class="info-box-number">৳{{ number_format($totalReceivedAmount * nbrCalculation(), 2) }}</span>
                 </div>
                 <!-- /.info-box-content -->
             </div>
@@ -69,17 +73,18 @@
 
         <div class="col-md-4 col-sm-6 col-xs-12">
             <div class="info-box">
-                <span class="info-box-icon bg-green"><i class="fa fa-star-half"></i></span>
+                <span class="info-box-icon bg-green"><i class="fa fa-spinner"></i></span>
 
                 <div class="info-box-content">
-                    <span class="info-box-text">Today's Total Due</span>
-                    <span class="info-box-number">৳{{ number_format($todayDue * nbrCalculation(), 2) }}</span>
+                    <span class="info-box-text">Total Due</span>
+                    <span class="info-box-number">৳{{ number_format($totalDue * nbrCalculation(), 2) }}</span>
                 </div>
                 <!-- /.info-box-content -->
             </div>
             <!-- /.info-box -->
         </div>
         <!-- /.col -->
+      
 
         <div class="col-md-4 col-sm-6 col-xs-12">
             <div class="info-box">
@@ -97,6 +102,48 @@
 
         <div class="col-md-4 col-sm-6 col-xs-12">
             <div class="info-box">
+                <span class="info-box-icon bg-purple"><i class="fa fa-shopping-bag"></i></span>
+
+                <div class="info-box-content">
+                    <span class="info-box-text">Today's Total Collection</span>
+                    <span class="info-box-number">৳{{ number_format($todaySale * nbrCalculation(), 2) }}</span>
+                </div>
+                <!-- /.info-box-content -->
+            </div>
+            <!-- /.info-box -->
+        </div>
+        <!-- /.col -->
+
+        <!-- <div class="col-md-4 col-sm-6 col-xs-12">
+            <div class="info-box">
+                <span class="info-box-icon bg-orange"><i class="fa fa-money"></i></span>
+
+                <div class="info-box-content">
+                    <span class="info-box-text">Today's Cash Sales</span>
+                    <span class="info-box-number">৳{{ number_format($todayCashSale * nbrCalculation(), 2) }}</span>
+                </div>
+                
+            </div>
+            
+        </div> -->
+        
+        <!-- <div class="col-md-4 col-sm-6 col-xs-12">
+            <div class="info-box">
+                <span class="info-box-icon bg-maroon"><i class="fa fa-credit-card"></i></span>
+
+                <div class="info-box-content">
+                    <span class="info-box-text">Today's Total Expense</span>
+                    <span class="info-box-number">৳{{ number_format($todayExpense * nbrCalculation(), 2) }}</span>
+                </div>
+               
+            </div>
+            
+        </div> -->
+        <!-- /.col -->
+
+
+        {{-- <div class="col-md-4 col-sm-6 col-xs-12">
+            <div class="info-box">
                 <span class="info-box-icon bg-aqua"><i class="fa fa-dollar"></i></span>
 
                 <div class="info-box-content">
@@ -107,9 +154,9 @@
             </div>
             <!-- /.info-box -->
         </div>
-        <!-- /.col -->
+        <!-- /.col --> --}}
 
-        @if (Auth::user()->company_branch_id == 0)
+        {{-- @if (Auth::user()->company_branch_id == 0)
             <div class="col-md-4 col-sm-6 col-xs-12">
                 <div class="info-box">
                     <span style="background-color: #303d99 !important;" class="info-box-icon bg-aqua"><i class="fa fa-shopping-cart"></i></span>
@@ -249,10 +296,88 @@
                 <!-- /.info-box -->
             </div>
             <!-- /.col -->
-        @endif
+        @endif --}}
     </div>
 
+    <!-- Pending Cheques Table -->
     <div class="row">
+        <div class="col-md-12">
+            <div class="box box-info">
+                <div class="box-header with-border">
+                    <h3 class="box-title">All Due List</h3>
+
+                    <div class="box-tools pull-right">
+                        <button type="button" class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i>
+                        </button>
+                        <button type="button" class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
+                    </div>
+                </div>
+                <!-- /.box-header -->
+                <div class="box-body">
+                    <div class="table-responsive">
+                        <table id="pending-cheques-table" class="table table-bordered table-striped">
+                            <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Invoice No</th>
+                                <th>Customer</th>
+                                <th>Payment Method</th>
+                                <th>Opening Due</th>
+                                <th>Total Amount</th>
+                                <th>Receive Amount</th>
+                                <th>Due Amount</th>
+                                <th>Note</th>
+                                <th>Status</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @foreach($pendingCheques as $payment)
+                                <tr>
+                                    <td>{{ $payment->date->format('d-m-Y') }}</td>
+                                    <td>{{ $payment->invoice_no ?? 'N/A' }}</td>
+                                    <td>{{ $payment->customer->name ?? 'N/A' }}</td>
+                                    <td>
+                                        @if($payment->transaction_method == 1)
+                                            Cash
+                                        @elseif($payment->transaction_method == 2)
+                                            Bank
+                                        @elseif($payment->transaction_method == 3)
+                                            Mobile Banking
+                                        @elseif($payment->transaction_method == 4)
+                                            Sale Adjustment Discount
+                                        @elseif($payment->transaction_method == 5)
+                                            Return Adjustment Amount
+                                        @else
+                                            {{ $payment->payment_method ?? 'Cash' }}
+                                        @endif
+                                    </td>
+                                    <td>৳{{ number_format($payment->opening_due_amount ?? 0, 2) }}</td>
+                                    <td>৳{{ number_format($payment->total_sales_amount ?? $payment->amount, 2) }}</td>
+                                    <td>৳{{ number_format($payment->receive_amount ?? $payment->amount, 2) }}</td>
+                                    <td>৳{{ number_format($payment->due_amount ?? 0, 2) }}</td>
+                                    <td>{{ $payment->note ?? 'N/A' }}</td>
+                                    <td>
+                                        @if($payment->status == 1)
+                                            <span class="label label-warning">Pending</span>
+                                        @elseif($payment->status == 2)
+                                            <span class="label label-success">Approved</span>
+                                        @else
+                                            <span class="label label-danger">Rejected</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                </div>
+               
+            </div>
+        </div>
+    </div>
+
+    {{-- <div class="row">
         <div class="col-md-6">
             <div class="box box-info">
                 <div class="box-header with-border">
@@ -303,14 +428,14 @@
                     <!-- /.table-responsive -->
                 </div>
                 <!-- /.box-body -->
-{{--                <div class="box-footer clearfix">--}}
-{{--                    {{ $todaySaleReceipt->links() }}--}}
-{{--                </div>--}}
+               <div class="box-footer clearfix">
+                   {{ $todaySaleReceipt->links() }}
+                </div>
                 <!-- /.box-footer -->
             </div>
-        </div>
+        </div> 
 
-        @if (Auth::user()->company_branch_id == 0)
+        {{-- @if (Auth::user()->company_branch_id == 0)
             <div class="col-md-6">
                 <div class="box box-info">
                     <div class="box-header with-border">
@@ -357,7 +482,7 @@
                     <!-- /.box-footer -->
                 </div>
             </div>
-        @else
+        {{-- @else
             <div class="row">
                 <div class="col-md-6">
                     <div class="box box-info">
@@ -435,11 +560,11 @@
                     </div>
                 @endif
             </div>
-        @endif
+        @endif --}}
 
     </div>
 
-    @if (Auth::user()->company_branch_id == 0)
+    {{-- @if (Auth::user()->company_branch_id == 0)
         <div class="row">
             <div class="col-md-6">
                 <div class="box box-info">
@@ -517,9 +642,9 @@
                 </div>
             @endif
         </div>
-    @endif
+    @endif --}}
 
-    <div class="row">
+    {{-- <div class="row">
         <div class="col-md-12">
             <div class="box box-info">
                 <div class="box-header with-border">
@@ -538,9 +663,9 @@
                 <!-- /.box-body -->
             </div>
         </div>
-    </div>
+    </div> --}}
 
-    <div class="row">
+    {{-- <div class="row">
         <div class="col-md-12">
             <div class="box box-info">
                 <div class="box-header with-border">
@@ -559,7 +684,7 @@
                 <!-- /.box-body -->
             </div>
         </div>
-    </div>
+    </div> --}}
     @endif
 @endsection
 
@@ -572,6 +697,12 @@
             });
 
             $('#p_table').DataTable({ordering: false});
+            
+            $('#pending-cheques-table').DataTable({
+                ordering: false,
+                pageLength: 10,
+                responsive: true
+            });
         } );
     </script>
 

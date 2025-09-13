@@ -8,7 +8,7 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Your Choice') }}</title>
+    <title>{{ config('app.name', 'AT International') }}</title>
 
     <!--Fevicon-->
     <link rel="icon" href="{{ asset('img/favicon.ico') }}" type="image/x-icon" />
@@ -38,7 +38,7 @@
 <div class="login-box">
     <div class="login-logo">
         <a href="{{ route('login') }}">
-            <img src="{{ asset('img/logo.png') }}" height="50px" alt="Your Choice">
+            <img src="{{ asset('img/Silvia-logo-final.jpg') }}" height="50px" alt="Your Choice">
         </a>
     </div>
     <!-- /.login-logo -->

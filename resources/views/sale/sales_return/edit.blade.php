@@ -245,7 +245,8 @@
             //Date picker
             $('#date').datepicker({
                 autoclose: true,
-                format: 'yyyy-mm-dd'
+                format: 'yyyy-mm-dd',
+                todayHighlight: true
             });
 
             $('#btn-add-product').click(function () {

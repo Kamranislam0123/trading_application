@@ -35,7 +35,7 @@
                             </div>
                         </div>
 
-                        <div class="form-group">
+                        <!-- <div class="form-group">
                             <label class="col-sm-2 control-label"> Select Company Branch *</label>
                             <div class="col-sm-10">
                                 <select class="form-control" name="company_branch_id">
@@ -43,7 +43,7 @@
                                     <option value="2">Branch-2</option>
                                 </select>
                             </div>
-                        </div>
+                        </div> -->
 
                         <div class="form-group {{ $errors->has('email') ? 'has-error' :'' }}">
                             <label class="col-sm-2 control-label">Email *</label>

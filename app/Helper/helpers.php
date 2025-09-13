@@ -2,20 +2,16 @@
 
 if (! function_exists('nbrCalculation')) {
     function nbrCalculation(){
-        if (auth()->user()->role == 1){
-            return 1;
-        }else{
-            return .40;
-        }
+        // Always return 1 to show actual amounts without conversion
+        // This ensures consistent financial data across all user roles
+        return 1;
     }
 }
 if (! function_exists('nbrSellCalculation')) {
     function nbrSellCalculation($amount = 0){
-        if (auth()->user()->role == 1){
-            return 0;
-        }else{
-            return (10 / 100) * $amount;
-        }
+        // Always return 0 to use actual prices without markup
+        // This ensures consistent pricing across all user roles
+        return 0;
     }
 }
 if (! function_exists('getSalePriceInventoryLog')) {

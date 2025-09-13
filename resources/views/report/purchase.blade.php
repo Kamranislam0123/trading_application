@@ -178,7 +178,8 @@
             //Date picker
             $('#start, #end').datepicker({
                 autoclose: true,
-                format: 'yyyy-mm-dd'
+                format: 'yyyy-mm-dd',
+                todayHighlight: true
             });
             $('#product_item').change(function() {
                 var productItemId = $(this).val();

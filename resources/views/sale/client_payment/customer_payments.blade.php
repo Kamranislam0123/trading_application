@@ -5,6 +5,7 @@
     <link rel="stylesheet" href="{{ asset('themes/backend/bower_components/datatables.net-bs/css/dataTables.bootstrap.min.css') }}">
     <!-- bootstrap datepicker -->
     <link rel="stylesheet" href="{{ asset('themes/backend/bower_components/bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css') }}">
+    
 @endsection
 
 @section('title')
@@ -28,9 +29,9 @@
                             <tr>
                                 <th>Date</th>
                                 <th>Customer</th>
-                                <th>Branch</th>
+                                {{-- <th>Branch</th> --}}
                                 <th>Payment Method</th>
-                                <th>Amount</th>
+                                <th>Received Amount</th>
                                 <th>Note</th>
                                 <th>Received by</th>
                                 <th>Action</th>
@@ -41,7 +42,7 @@
                                 <tr>
                                     <td>{{ $payment->date->format('Y-m-d') }}</td>
                                     <td>{{ $payment->customer->name??'' }}</td>
-                                    <td>
+                                    {{-- <td>
                                         @if($payment->company_branch_id == 1)
                                             Your Choice
                                         @elseif($payment->company_branch_id == 2)
@@ -49,7 +50,7 @@
                                         @else
                                             Admin Payment
                                         @endif
-                                    </td>
+                                    </td> --}}
                                     <td>
                                         @if($payment->transaction_method == 5)
                                             Return Adjustment
@@ -57,7 +58,7 @@
                                             {{ ($payment->transaction_method==1?'Cash':($payment->transaction_method == 4?'Sale Adjustment':'Bank')) }}
                                         @endif
                                     </td>
-                                    <td>{{ number_format($payment->amount,2) }}</td>
+                                    <td>{{ number_format($payment->receive_amount ?? $payment->amount,2) }}</td>
                                     <td>{{ $payment->note }}</td>
                                     <td>
                                         @if ($payment->company_branch_id == 0)
@@ -71,7 +72,6 @@
                                     <td>
                                         @if ($payment->status == 1)
                                             <a class="btn btn-info btn-sm" href="{{ route('sale_receipt.payment_details', $payment->id) }}"> Voucher </a>
-                                            <a class="btn btn-warning btn-sm btn-pending" role="button" data-id="{{$payment->id}}" data-name="{{$payment->customer->name}}">Pending</a>
                                             <a class="btn btn-danger btn-sm btn-delete" role="button" data-id="{{$payment->id}}" data-customer-id="{{$payment->customer_id}}">Delete</a>
                                         @else
                                             <a class="btn btn-info btn-sm" href="{{ route('sale_receipt.payment_details', $payment->id) }}"> Voucher </a>
@@ -253,7 +253,8 @@
             //Date picker
             $('#date, #next-payment-date').datepicker({
                 autoclose: true,
-                format: 'yyyy-mm-dd'
+                format: 'yyyy-mm-dd',
+                todayHighlight: true
             });
 
             $('body').on('click', '.btn-delete', function () {

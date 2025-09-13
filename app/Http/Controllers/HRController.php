@@ -42,40 +42,52 @@ class HRController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:employees',
-            'password' => 'required|string|max:255',
+            'email' => 'nullable|string|email|max:255',
+            'password' => 'nullable|string|max:255',
             'date_of_birth' => 'nullable|date',
             'joining_date' => 'nullable|date',
             'confirmation_date' => 'nullable|date',
             'department' => 'required',
             'designation' => 'required',
             'education_qualification' => 'nullable|max:255',
-            'employee_type' => 'required',
+            'employee_type' => 'nullable',
             'reporting_to' => 'nullable|string|max:255',
-            'gender' => 'required',
-            'marital_status' => 'required',
-            'mobile_no' => 'nullable|digits:11',
+            'gender' => 'nullable',
+            'marital_status' => 'nullable',
+            'mobile_no' => 'nullable|string|max:15',
             'father_name' => 'nullable|string|max:255',
             'mother_name' => 'nullable|string|max:255',
             'emergency_contact' => 'required|string|max:255',
-            'signature' => 'nullable|image',
-            'photo' => 'nullable|image',
-            'present_address' => 'required|string|max:255',
-            'permanent_address' => 'required|string|max:255',
-            'religion' => 'required',
-            'cv' => 'nullable|mimes:doc,pdf,docx',
-            'gross_salary' => 'required',
+            'signature' => 'nullable|file|mimes:jpeg,png,jpg,gif|max:2048',
+            'photo' => 'nullable|file|mimes:jpeg,png,jpg,gif|max:2048',
+            'present_address' => 'nullable|string|max:255',
+            'permanent_address' => 'nullable|string|max:255',
+            'religion' => 'nullable',
+            'cv' => 'nullable|file|mimes:doc,pdf,docx|max:5120',
+            'gross_salary' => 'nullable|numeric',
             'bank_name' => 'nullable|max:255',
             'bank_branch' => 'nullable|max:255',
             'bank_account' => 'nullable',
-            'previous_salary' => 'nullable',
+            'previous_salary' => 'nullable|numeric',
         ]);
 
         // Create User 
         $user = new User();
         $user->name = $request->name;
-        $user->email = $request->email;
-        $user->password = bcrypt($request->password);
+        
+        // Handle email - check if provided email is unique, otherwise generate one
+        if ($request->email) {
+            $existingUser = User::where('email', $request->email)->first();
+            if ($existingUser) {
+                $user->email = 'employee_' . $request->employee_id . '@company.com';
+            } else {
+                $user->email = $request->email;
+            }
+        } else {
+            $user->email = 'employee_' . $request->employee_id . '@company.com';
+        }
+        
+        $user->password = bcrypt($request->password ?: 'password123');
         $user->save();
         $user->syncPermissions($request->permission);
 
@@ -121,38 +133,39 @@ class HRController extends Controller
         $employee->name = $request->name;
         $employee->employee_id = $request->employee_id;
         $employee->email = $request->email;
-        $employee->dob = $request->date_of_birth;
-        $employee->joining_date = $request->joining_date;
-        $employee->confirmation_date = $request->confirmation_date;
+        $employee->dob = $request->date_of_birth ?: null;
+        $employee->joining_date = $request->joining_date ?: null;
+        $employee->confirmation_date = $request->confirmation_date ?: null;
         $employee->department_id = $request->department;
         $employee->designation_id = $request->designation;
-        $employee->education_qualification = $request->education_qualification;
-        $employee->employee_type = $request->employee_type;
-        $employee->reporting_to = $request->reporting_to;
-        $employee->gender = $request->gender;
-        $employee->marital_status = $request->marital_status;
-        $employee->mobile_no = $request->mobile_no;
-        $employee->father_name = $request->father_name;
-        $employee->mother_name = $request->mother_name;
+        $employee->education_qualification = $request->education_qualification ?: 'Not Specified';
+        $employee->employee_type = $request->employee_type ?: 'Permanent';
+        $employee->reporting_to = $request->reporting_to ?: 'Not Specified';
+        $employee->gender = $request->gender ?: 'Not Specified';
+        $employee->marital_status = $request->marital_status ?: 'Not Specified';
+        $employee->mobile_no = $request->mobile_no ?: 'Not Provided';
+        $employee->father_name = $request->father_name ?: 'Not Specified';
+        $employee->mother_name = $request->mother_name ?: 'Not Specified';
         $employee->emergency_contact = $request->emergency_contact;
         $employee->signature = $signature;
         $employee->photo = $photo;
-        $employee->present_address = $request->present_address;
-        $employee->permanent_address = $request->permanent_address;
-        $employee->religion = $request->religion;
+        $employee->present_address = $request->present_address ?: 'Not Provided';
+        $employee->permanent_address = $request->permanent_address ?: 'Not Provided';
+        $employee->religion = $request->religion ?: 'Not Specified';
         $employee->cv = $cv;
 
 
         $employee->previous_salary = $request->previous_salary ? $request->previous_salary : 0;
-        $employee->gross_salary = $request->gross_salary;
-        $employee->bank_name = $request->bank_name;
-        $employee->bank_branch = $request->bank_branch;
-        $employee->bank_account = $request->bank_account;
+        $employee->gross_salary = $request->gross_salary ? $request->gross_salary : 0;
+        $employee->bank_name = $request->bank_name ?: 'Not Provided';
+        $employee->bank_branch = $request->bank_branch ?: 'Not Provided';
+        $employee->bank_account = $request->bank_account ?: 'Not Provided';
 
-        $employee->medical = round($request->gross_salary * .04);
-        $employee->travel = round($request->gross_salary * .12);
-        $employee->house_rent = round($request->gross_salary * .24);
-        $employee->basic_salary = round($request->gross_salary * .60);
+        $grossSalary = $request->gross_salary ? $request->gross_salary : 0;
+        $employee->medical = round($grossSalary * .04);
+        $employee->travel = round($grossSalary * .12);
+        $employee->house_rent = round($grossSalary * .24);
+        $employee->basic_salary = round($grossSalary * .60);
         $employee->tax = 0;
         $employee->others_deduct =0;
 
@@ -169,13 +182,13 @@ class HRController extends Controller
             $salaryChangeLog = new SalaryChangeLog();
             $salaryChangeLog->employee_id = $employee->id;
             $salaryChangeLog->date = date('Y-m-d');
-            $salaryChangeLog->basic_salary = round($request->gross_salary * .60);
-            $salaryChangeLog->house_rent = round($request->gross_salary * .24);
-            $salaryChangeLog->travel = round($request->gross_salary * .12);
-            $salaryChangeLog->medical = round($request->gross_salary * .04);
+            $salaryChangeLog->basic_salary = round($grossSalary * .60);
+            $salaryChangeLog->house_rent = round($grossSalary * .24);
+            $salaryChangeLog->travel = round($grossSalary * .12);
+            $salaryChangeLog->medical = round($grossSalary * .04);
             $salaryChangeLog->tax = 0;
             $salaryChangeLog->others_deduct = 0;
-            $salaryChangeLog->gross_salary = round($request->gross_salary);
+            $salaryChangeLog->gross_salary = round($grossSalary);
             $salaryChangeLog->type = 5;
             $salaryChangeLog->save();
 
@@ -216,21 +229,21 @@ class HRController extends Controller
             'permanent_address' => 'required|string|max:255',
             'religion' => 'required',
             'cv' => 'nullable|mimes:doc,pdf,docx',
-            'bank_name' => 'nullable|max:255',
-            'bank_branch' => 'nullable|max:255',
-            'bank_account' => 'nullable|max:255',
+            // 'bank_name' => 'nullable|max:255',
+            // 'bank_branch' => 'nullable|max:255',
+            // 'bank_account' => 'nullable|max:255',
             Rule::unique('employees')->ignore($employee->id),
 
         ]);
 
         // Update User Info 
         $user = User::where('id', $employee->user_id)->first();
-        $user->name = $request->name;
-        $user->email = $request->email;
-        if ($request->password !='') {
-            $user->password = bcrypt($request->password);
-        }
-        $user->save();
+        // $user->name = $request->name;
+        // $user->email = $request->email;
+        // if ($request->password !='') {
+        //     $user->password = bcrypt($request->password);
+        // }
+        // $user->save();
 
         $signature = $employee->signature;
         if ($request->signature) {
@@ -288,16 +301,16 @@ class HRController extends Controller
         $employee->reporting_to = $request->reporting_to;
         $employee->gender = $request->gender;
         $employee->marital_status = $request->marital_status;
-        $employee->mobile_no = $request->mobile_no;
-        $employee->father_name = $request->father_name;
-        $employee->mother_name = $request->mother_name;
+        $employee->mobile_no = $request->mobile_no ?: 'Not Provided';
+        $employee->father_name = $request->father_name ?: 'Not Specified';
+        $employee->mother_name = $request->mother_name ?: 'Not Specified';
         $employee->emergency_contact = $request->emergency_contact;
         $employee->signature = $signature;
         $employee->photo = $photo;
-        $employee->present_address = $request->present_address;
-        $employee->permanent_address = $request->permanent_address;
+        $employee->present_address = $request->present_address ?: 'Not Provided';
+        $employee->permanent_address = $request->permanent_address ?: 'Not Provided';
         $employee->email = $request->email;
-        $employee->religion = $request->religion;
+        $employee->religion = $request->religion ?: 'Not Specified';
         $employee->cv = $cv;
         $employee->bank_name =$request->bank_name;
         $employee->bank_branch =$request->bank_branch;

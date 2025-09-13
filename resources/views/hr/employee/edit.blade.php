@@ -61,7 +61,7 @@
                             </div>
                         </div>
 
-                        <div class="form-group {{ $errors->has('password') ? 'has-error' :'' }}">
+                        <!-- <div class="form-group {{ $errors->has('password') ? 'has-error' :'' }}">
                             <label class="col-sm-2 control-label">Password </label>
 
                             <div class="col-sm-10">
@@ -72,7 +72,7 @@
                                 <span class="help-block">{{ $message }}</span>
                                 @enderror
                             </div>
-                        </div>
+                        </div> -->
 
                         <div class="form-group {{ $errors->has('date_of_birth') ? 'has-error' :'' }}">
                             <label class="col-sm-2 control-label">Date of Birth </label>
@@ -379,7 +379,7 @@
                                 @enderror
                             </div>
                         </div>
-                        <div class="form-group {{ $errors->has('bank_name') ? 'has-error' :'' }}">
+                        <!-- <div class="form-group {{ $errors->has('bank_name') ? 'has-error' :'' }}">
                             <label class="col-sm-2 control-label">Bank Name </label>
 
                             <div class="col-sm-10">
@@ -415,7 +415,7 @@
                                 <span class="help-block">{{ $message }}</span>
                                 @enderror
                             </div>
-                        </div>
+                        </div> -->
 
                     </div>
                     <!-- /.box-body -->

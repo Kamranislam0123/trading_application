@@ -143,7 +143,8 @@
             $('#start, #end').datepicker({
                 autoclose: true,
                 format: 'yyyy-mm-dd',
-                orientation: 'bottom'
+                orientation: 'bottom',
+                todayHighlight: true
             });
 
         });

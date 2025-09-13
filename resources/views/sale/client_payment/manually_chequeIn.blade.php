@@ -22,7 +22,7 @@
         <div class="col-md-12">
             <div class="box">
                 <div class="box-header with-border">
-                    <h3 class="box-title">Manually ChequeIn Information</h3>
+                    <h3 class="box-title">Manually Due Entry Information</h3>
                 </div>
                 <!-- /.box-header -->
                 <!-- form start -->
@@ -31,7 +31,7 @@
 
                     <div class="box-body">
                         <div class="form-group {{ $errors->has('customer') ? 'has-error' :'' }}">
-                            <label class="col-sm-2 control-label">Customer</label>
+                            <label class="col-sm-2 control-label">Customer Name</label>
 
                             <div class="col-sm-10">
                                 <select class="form-control select2" name="customer" id="customer">
@@ -48,7 +48,20 @@
                             </div>
                         </div>
 
-                        <div class="form-group {{ $errors->has('sale_order_no') ? 'has-error' :'' }}">
+                        <div class="form-group {{ $errors->has('invoice_no') ? 'has-error' :'' }}">
+                            <label class="col-sm-2 control-label">Invoice No</label>
+
+                            <div class="col-sm-10">
+                                <input type="text" class="form-control" placeholder="Enter Invoice Number"
+                                       name="invoice_no" value="{{ old('invoice_no') }}">
+
+                                @error('invoice_no')
+                                <span class="help-block">{{ $message }}</span>
+                                @enderror
+                            </div>
+                        </div>
+
+                        {{-- <div class="form-group {{ $errors->has('sale_order_no') ? 'has-error' :'' }}">
                             <label class="col-sm-2 control-label">Sale Order</label>
 
                             <div class="col-sm-10">
@@ -60,22 +73,42 @@
                                 <span class="help-block">{{ $message }}</span>
                                 @enderror
                             </div>
-                        </div>
+                        </div> --}}
 
-                        <div class="form-group {{ $errors->has('client_bank_name') ? 'has-error' :'' }}">
-                            <label class="col-sm-2 control-label">Client Bank Name *</label>
-
+                        <div class="form-group {{ $errors->has('payment_method') ? 'has-error' :'' }}">
+                            <label class="col-sm-2 control-label">Payment Method </label>
                             <div class="col-sm-10">
-                                <input type="text" class="form-control" placeholder="Enter Client Bank Name"
-                                       name="client_bank_name" value="{{ old('client_bank_name') }}">
+                                <select class="form-control" name="payment_method" id="payment_method">
+                                    <option value="">Select Payment Method</option>
+                                    <option value="1" {{ old('payment_method') == '1' ? 'selected' : '' }}>Cash</option>
+                                    <option value="2" {{ old('payment_method') == '2' ? 'selected' : '' }}>Bank</option>
+                                </select>
 
-                                @error('client_bank_name')
+                                @error('payment_method')
                                 <span class="help-block">{{ $message }}</span>
                                 @enderror
                             </div>
                         </div>
 
-                        <div class="form-group {{ $errors->has('client_cheque_no') ? 'has-error' :'' }}">
+                        <div class="form-group {{ $errors->has('sales_person_id') ? 'has-error' :'' }}">
+                            <label class="col-sm-2 control-label">Sales Person Name</label>
+                            <div class="col-sm-10">
+                                <select class="form-control select2" name="sales_person_id" id="sales_person_id">
+                                    <option value="">Select Sales Person</option>
+                                    @foreach($employees as $employee)
+                                        <option value="{{ $employee->id }}" {{ old('sales_person_id') == $employee->id ? 'selected' : '' }}>
+                                            {{ $employee->name }} - {{ $employee->employee_id }}
+                                        </option>
+                                    @endforeach
+                                </select>
+
+                                @error('sales_person_id')
+                                <span class="help-block">{{ $message }}</span>
+                                @enderror
+                            </div>
+                        </div>
+
+                        {{-- <div class="form-group {{ $errors->has('client_cheque_no') ? 'has-error' :'' }}">
                             <label class="col-sm-2 control-label">Client Cheque No.*</label>
 
                             <div class="col-sm-10">
@@ -86,9 +119,72 @@
                                 <span class="help-block">{{ $message }}</span>
                                 @enderror
                             </div>
+                        </div> --}}
+
+                        <div class="form-group {{ $errors->has('total_sales_amount') ? 'has-error' :'' }}">
+                            <label class="col-sm-2 control-label">Total Sales Amount</label>
+
+                            <div class="col-sm-10">
+                                <input type="number" step="0.01" class="form-control" placeholder="Enter Total Sales Amount"
+                                       name="total_sales_amount" id="total_sales_amount" value="{{ old('total_sales_amount',0) }}">
+
+                                @error('total_sales_amount')
+                                <span class="help-block">{{ $message }}</span>
+                                @enderror
+                            </div>
                         </div>
 
-                        <div class="form-group {{ $errors->has('client_amount') ? 'has-error' :'' }}">
+                        <div class="form-group {{ $errors->has('receive_amount') ? 'has-error' :'' }}">
+                            <label class="col-sm-2 control-label">Receive Amount</label>
+
+                            <div class="col-sm-10">
+                                <input type="number" step="0.01" class="form-control" placeholder="Enter Receive Amount"
+                                       name="receive_amount" id="receive_amount" value="{{ old('receive_amount',0) }}">
+
+                                @error('receive_amount')
+                                <span class="help-block">{{ $message }}</span>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">Due Amount</label>
+
+                            <div class="col-sm-10">
+                                <input type="text" class="form-control" id="due_amount" readonly value="0.00">
+                                <input type="hidden" name="due_amount" id="due_amount_hidden" value="0.00">
+                            </div>
+                        </div>
+
+                        <div class="form-group {{ $errors->has('next_payment_date') ? 'has-error' :'' }}">
+                            <label class="col-sm-2 control-label">Due Amount Next Payment Date</label>
+                            <div class="col-sm-10">
+                                <div class="input-group date">
+                                    <div class="input-group-addon">
+                                        <i class="fa fa-calendar"></i>
+                                    </div>
+                                    <input type="text" class="form-control pull-right" id="next_payment_date" name="next_payment_date" value="{{ old('next_payment_date') }}" autocomplete="off">
+                                </div>
+                                @error('next_payment_date')
+                                <span class="help-block">{{ $message }}</span>
+                                @enderror
+                            </div>
+                            <!-- /.input group -->
+                        </div>
+
+                        <div class="form-group {{ $errors->has('next_approximate_payment') ? 'has-error' :'' }}">
+                            <label class="col-sm-2 control-label">Next Approximate Payment</label>
+                            <div class="col-sm-10">
+                                <input type="number" step="0.01" class="form-control" placeholder="Enter Next Approximate Payment Amount"
+                                       name="next_approximate_payment" id="next_approximate_payment" value="{{ old('next_approximate_payment',0) }}">
+
+                                @error('next_approximate_payment')
+                                <span class="help-block">{{ $message }}</span>
+                                @enderror
+                            </div>
+                        </div>
+
+                        {{-- <div class="form-group {{ $errors->has('client_amount') ? 'has-error' :'' }}">
                             <label class="col-sm-2 control-label">Cheque Amount</label>
 
                             <div class="col-sm-10">
@@ -99,7 +195,7 @@
                                 <span class="help-block">{{ $message }}</span>
                                 @enderror
                             </div>
-                        </div>
+                        </div> --}}
 
                         <div class="form-group {{ $errors->has('note') ? 'has-error' :'' }}">
                             <label class="col-sm-2 control-label">Client Note</label>
@@ -114,7 +210,7 @@
                             </div>
                         </div>
 
-                        <div class="form-group {{ $errors->has('cheque_date') ? 'has-error' :'' }}">
+                        {{-- <div class="form-group {{ $errors->has('cheque_date') ? 'has-error' :'' }}">
                             <label class="col-sm-2 control-label">Cheque Date </label>
                             <div class="col-sm-10">
                                 <div class="input-group date">
@@ -128,7 +224,7 @@
                                 @enderror
                             </div>
                             <!-- /.input group -->
-                        </div>
+                        </div> --}}
                     </div>
                     <!-- /.box-body -->
 
@@ -175,9 +271,27 @@
         $('#customer').trigger('change');
 
         //Date picker
-        $('#date, #cheque_date').datepicker({
+        $('#date, #cheque_date, #next_payment_date').datepicker({
             autoclose: true,
+            todayHighlight: true,
             format: 'yyyy-mm-dd'
         });
+
+        // Calculate due amount when total sales amount or receive amount changes
+        $('#total_sales_amount, #receive_amount').on('input', function() {
+            calculateDueAmount();
+        });
+
+        function calculateDueAmount() {
+            var totalSalesAmount = parseFloat($('#total_sales_amount').val()) || 0;
+            var receiveAmount = parseFloat($('#receive_amount').val()) || 0;
+            var dueAmount = totalSalesAmount - receiveAmount;
+            
+            $('#due_amount').val(dueAmount.toFixed(2));
+            $('#due_amount_hidden').val(dueAmount.toFixed(2));
+        }
+
+        // Initialize due amount calculation on page load
+        calculateDueAmount();
     </script>
 @endsection
