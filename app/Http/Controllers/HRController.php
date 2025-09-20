@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Model\AcitivityLog;
 use App\User;
 use App\Model\Department;
+use App\Model\Designation;
 use App\Model\DesignationLog;
 use App\Model\Employee;
 use App\Model\EmployeeAttendance;
@@ -213,8 +214,8 @@ class HRController extends Controller
             'joining_date' => 'nullable|date',
             'confirmation_date' => 'nullable|date',
             'education_qualification' => 'nullable|max:255',
-            /*'department' => 'required',
-            'designation' => 'required',*/
+            'department' => 'nullable|exists:departments,id',
+            'designation' => 'nullable|exists:designations,id',
             'employee_type' => 'required',
             'reporting_to' => 'nullable|string|max:255',
             'gender' => 'required',
@@ -295,8 +296,8 @@ class HRController extends Controller
         $employee->joining_date = $request->joining_date;
         $employee->confirmation_date = $request->confirmation_date;
         $employee->education_qualification = $request->education_qualification;
-        /*$employee->department_id = $request->department;
-        $employee->designation_id = $request->designation;*/
+        $employee->department_id = $request->department;
+        $employee->designation_id = $request->designation;
         $employee->employee_type = $request->employee_type;
         $employee->reporting_to = $request->reporting_to;
         $employee->gender = $request->gender;
@@ -326,7 +327,13 @@ class HRController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('hr.employee.details', compact('employee', 'leaves'));
+        // Get employee targets for the current year
+        $targets = EmployeeTarget::where('employee_id', $employee->id)
+            ->where('year', date('Y'))
+            ->orderBy('from_date', 'desc')
+            ->get();
+
+        return view('hr.employee.details', compact('employee', 'leaves', 'targets'));
     }
 
     public function getLeave(Request $request) {
@@ -336,6 +343,17 @@ class HRController extends Controller
             ->get();
 
         $html = view('partials.leave_table', compact('leaves'))->render();
+
+        return response()->json(['html' => $html]);
+    }
+
+    public function getTargets(Request $request) {
+        $targets = EmployeeTarget::where('employee_id', $request->employeeId)
+            ->where('year', $request->year)
+            ->orderBy('from_date', 'desc')
+            ->get();
+
+        $html = view('partials.target_table', compact('targets'))->render();
 
         return response()->json(['html' => $html]);
     }
@@ -475,16 +493,28 @@ class HRController extends Controller
 
     public function employeeTargetUpdate(Request $request)
     {
+        $request->validate([
+            'employee_id' => 'required|exists:employees,id',
+            'from_date' => 'required|date',
+            'to_date' => 'required|date|after_or_equal:from_date',
+            'amount' => 'required|numeric|min:0'
+        ]);
+
+        // Extract year from from_date
+        $year = date('Y', strtotime($request->from_date));
+
         $employee_target = EmployeeTarget::where([
             'employee_id'=> $request->employee_id,
-            'month'=> $request->month,
-            'year'=> $request->year,
+            'from_date'=> $request->from_date,
+            'to_date'=> $request->to_date,
             ])->first();
         if($employee_target){
             $employee_target->amount = $request->amount;
+            $employee_target->year = $year;
             $employee_target->save();
         }else{
             $data = $request->all();
+            $data['year'] = $year;
             EmployeeTarget::create($data);
         } 
         return "Employee target amount updated successfully done.";

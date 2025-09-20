@@ -9,7 +9,7 @@ class SalePayment extends Model
 {
     protected $guarded = [];
 
-    protected $dates = ['date', 'next_approximate_payment_date'];
+    protected $dates = ['date', 'next_approximate_payment_date', 'second_next_payment_date'];
 
     public function salesOrder() {
         return $this->belongsTo(SalesOrder::class);

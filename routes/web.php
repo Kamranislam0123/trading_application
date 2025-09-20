@@ -104,6 +104,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('employee/target-update', 'HRController@employeeTargetUpdate')->name('employee.target_update');
 
     Route::post('payroll/get-leave', 'HRController@getLeave')->name('employee.get_leaves')->middleware('permission:leave');
+    Route::post('payroll/get-targets', 'HRController@getTargets')->name('employee.get_targets')->middleware('permission:employee');
 
     // Payroll - Salary Update
     Route::get('payroll/salary-update', 'PayrollController@salaryUpdateIndex')->name('payroll.salary_update.index')->middleware('permission:salary_update');
@@ -401,6 +402,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('report/report-trail-balance', 'ReportController@trailBalance')->name('report.trail_balance')->middleware('permission:trail_balance');
     Route::get('report/employee-list', 'ReportController@employeeList')->name('report.employee_list');
     Route::get('report/employee-attendance', 'ReportController@employeeAttendance')->name('report.employee_attendance')->middleware('permission:employee_attendance_report');
+    Route::get('report/employee-target-customer-wise', 'ReportController@employeeTargetCustomerWise')->name('report.employee_target_customer_wise')->middleware('permission:client_summary');
     Route::get('report/monthly-crm', 'ReportController@monthlyCRM')->name('report.monthly_crm');
     Route::get('report/product-in-out', 'ReportController@productInOut')->name('report.product_in_out');
     Route::get('report/branch-wise-client', 'ReportController@branchWiseClient')->name('report.branch_wise_client')->middleware('permission:client_summary');

@@ -200,7 +200,7 @@
                 @can('hr')
                     <li class="treeview {{ in_array(Route::currentRouteName(), $subMenu) ? 'active' : '' }}">
                         <a href="#">
-                            <i class="fa fa-circle-o text-info"></i> <span>HR</span>
+                            <i class="fa fa-circle-o text-info"></i> <span>SR</span>
                             <span class="pull-right-container">
                             <i class="fa fa-angle-left pull-right"></i>
                             </span>
@@ -218,12 +218,12 @@
                             @endcan
                             @can('employee')
                             <li class="{{ Route::currentRouteName() == 'employee.all' ? 'active' : '' }}">
-                                <a href="{{ route('employee.all') }}"><i class="fa fa-circle-o"></i> Employee</a>
+                                <a href="{{ route('employee.all') }}"><i class="fa fa-circle-o"></i> Sales Person</a>
                             </li>
                             @endcan
                             @can('employee_list')
                             <li class="{{ Route::currentRouteName() == 'report.employee_list' ? 'active' : '' }}">
-                                <a href="{{ route('report.employee_list') }}"><i class="fa fa-circle-o"></i> Employee List</a>
+                                <a href="{{ route('report.employee_list') }}"><i class="fa fa-circle-o"></i> Sales Person List</a>
                             </li>
                             @endcan
                             <!-- @can('employee_attendance')
@@ -557,7 +557,7 @@
                     'report.bank_statement','report.income_statement','report.client_statement','report.supplier_statement','report.monthly_crm',
                     'report.employee_attendance','report.sale_stock','report.price.with.stock','report.price.without.stock','report.receive_payment','report.trail_balance',
                     'report.product_in_out','report.cash_statement','report.party_ledger','report.bill_wise_profit_loss','report.transaction',
-                    'report.branch_wise_client','report.branch_wise_sale_return'];
+                    'report.branch_wise_client','report.branch_wise_sale_return','report.employee_target_customer_wise'];
                 ?>
 
                 @can('report')
@@ -573,6 +573,9 @@
                             @can('client_summary')
                                 <li class="{{ Route::currentRouteName() == 'report.client_statement' ? 'active' : '' }}">
                                     <a href="{{ route('report.client_statement') }}"><i class="fa fa-circle-o"></i> Client Report</a>
+                                </li>
+                                <li class="{{ Route::currentRouteName() == 'report.employee_target_customer_wise' ? 'active' : '' }}">
+                                    <a href="{{ route('report.employee_target_customer_wise') }}"><i class="fa fa-circle-o"></i> Sales Target Customer Wise</a>
                                 </li>
                             @endcan
                             <!-- @can('client_summary')

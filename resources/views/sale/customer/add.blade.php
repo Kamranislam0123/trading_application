@@ -56,6 +56,23 @@
                             </div>
                         </div>
 
+                        <div class="form-group {{ $errors->has('employee_id') ? 'has-error' :'' }}">
+                            <label class="col-sm-2 control-label">Sales Person</label>
+
+                            <div class="col-sm-10">
+                                <select class="form-control" name="employee_id" id="employee_id">
+                                    <option value="">Select Sales Person</option>
+                                    @foreach($employees as $employee)
+                                        <option value="{{ $employee->id }}" {{ old('employee_id') == $employee->id ? 'selected' : '' }}>{{ $employee->name }}</option>
+                                    @endforeach
+                                </select>
+
+                                @error('employee_id')
+                                <span class="help-block">{{ $message }}</span>
+                                @enderror
+                            </div>
+                        </div>
+
                         <div class="form-group {{ $errors->has('opening_due') ? 'has-error' :'' }}">
                             <label class="col-sm-2 control-label"> Opening Due</label>
 

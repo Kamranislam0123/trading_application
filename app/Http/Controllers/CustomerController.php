@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Model\Customer;
+use App\Model\Employee;
+use App\Model\Bank;
 use Illuminate\Http\Request;
 use DataTables;
 use Illuminate\Support\Facades\Auth;
@@ -10,11 +12,14 @@ use Illuminate\Support\Facades\Auth;
 class CustomerController extends Controller
 {
     public function index() {
-        return view('sale.customer.all');
+        $banks = Bank::where('status', 1)->orderBy('name')->get();
+        $employees = Employee::orderBy('name')->get();
+        return view('sale.customer.all', compact('banks', 'employees'));
     }
 
     public function add() {
-        return view('sale.customer.add');
+        $employees = Employee::orderBy('name')->get();
+        return view('sale.customer.add', compact('employees'));
     }
 
     public function addPost(Request $request) {
@@ -22,6 +27,7 @@ class CustomerController extends Controller
             'name' => 'required|string|max:255',
             'mobile_no' => 'nullable|string|max:255',
             'address' => 'nullable|string|max:255',
+            'employee_id' => 'nullable|exists:employees,id',
             'opening_due' => 'required|numeric',
         ]);
 
@@ -30,6 +36,7 @@ class CustomerController extends Controller
         $customer->company_branch_id = Auth::user()->company_branch_id;
         $customer->mobile_no = $request->mobile_no;
         $customer->address = $request->address;
+        $customer->employee_id = $request->employee_id;
         $customer->opening_due = $request->opening_due;
         $customer->status = $request->status;
         $customer->save();
@@ -38,7 +45,8 @@ class CustomerController extends Controller
     }
 
     public function edit(Customer $customer) {
-        return view('sale.customer.edit', compact('customer'));
+        $employees = Employee::orderBy('name')->get();
+        return view('sale.customer.edit', compact('customer', 'employees'));
     }
 
     public function editPost(Customer $customer, Request $request) {
@@ -46,33 +54,44 @@ class CustomerController extends Controller
             'name' => 'required|string|max:255',
             'mobile_no' => 'nullable|string|max:255',
             'address' => 'nullable|string|max:255',
+            'employee_id' => 'nullable|exists:employees,id',
             'opening_due' => 'required|numeric',
         ]);
 
         $customer->name = $request->name;
         $customer->mobile_no = $request->mobile_no;
         $customer->address = $request->address;
+        $customer->employee_id = $request->employee_id;
         $customer->opening_due = $request->opening_due;
         $customer->status = $request->status;
-        $customer->save();;
+        $customer->save();
 
         return redirect()->route('customer')->with('message', 'Customer edit successfully.');
     }
 
-    public function datatable() {
+    public function datatable(Request $request) {
         if (Auth::user()->company_branch_id == 0) {
-            $query = Customer::with('branch');
+            $query = Customer::with('branch', 'employee');
         }else{
-            $query = Customer::where('company_branch_id', Auth::user()->company_branch_id);
+            $query = Customer::where('company_branch_id', Auth::user()->company_branch_id)->with('employee');
         }
 
+        // Apply sales person filter if provided
+        if ($request->filled('employee_id')) {
+            $query->where('employee_id', $request->employee_id);
+        }
 
         return DataTables::eloquent($query)
             ->addColumn('action', function(Customer $customer) {
-                return '<a class="btn btn-info btn-sm" href="'.route('customer.edit', ['customer' => $customer->id]).'"> Edit';
+                $btn = '<a class="btn btn-info btn-sm" href="'.route('customer.edit', ['customer' => $customer->id]).'">Edit</a> ';
+                $btn .= '<a class="btn btn-success btn-sm btn-pay" role="button" data-id="' . $customer->id . '" data-name="' . $customer->name . '" data-due="' . $customer->due . '">Payment</a>';
+                return $btn;
             })
             ->addColumn('branch', function(Customer $customer) {
                 return $customer->branch->name??'';
+            })
+            ->addColumn('employee', function(Customer $customer) {
+                return $customer->employee ? $customer->employee->name : 'Not Assigned';
             })
             ->addColumn('status', function(Customer $customer) {
                 if ($customer->status == 1) {

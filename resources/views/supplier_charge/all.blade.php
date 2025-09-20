@@ -204,14 +204,19 @@
                     success: function(response) {
                         if (response.success) {
                             $('#modal-pay').modal('hide');
-                            Swal.fire(
-                                'Paid!',
-                                response.message,
-                                'success'
-                            ).then((result) => {
-                                //location.reload();
-                                window.location.href = response.redirect_url;
+                            Swal.fire({
+                                title: 'Paid!',
+                                text: response.message,
+                                icon: 'success',
+                                timer: 2000, // Auto close after 2 seconds
+                                showConfirmButton: false, // Hide the OK button
+                                timerProgressBar: true // Show progress bar
                             });
+                            
+                            // Redirect after 2 seconds
+                            setTimeout(function() {
+                                window.location.href = response.redirect_url;
+                            }, 2000);
                         } else {
                             Swal.fire({
                                 icon: 'error',

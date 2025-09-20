@@ -107,6 +107,7 @@
                 <div class="info-box-content">
                     <span class="info-box-text">Today's Total Collection</span>
                     <span class="info-box-number">৳{{ number_format($todaySale * nbrCalculation(), 2) }}</span>
+                    <small class="text-muted">Due + Received</small>
                 </div>
                 <!-- /.info-box-content -->
             </div>
@@ -373,6 +374,151 @@
                     
                 </div>
                
+            </div>
+        </div>
+    </div>
+
+    <!-- Next Day Payments Table -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="box box-warning">
+                <div class="box-header with-border">
+                    <h3 class="box-title">Next Day Payments (Due Tomorrow)</h3>
+                    <div class="box-tools pull-right">
+                        <button type="button" class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i>
+                        </button>
+                        <button type="button" class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
+                    </div>
+                </div>
+                <!-- /.box-header -->
+                <div class="box-body">
+                    <div class="table-responsive">
+                        <table id="next-day-payments-table" class="table table-bordered table-striped">
+                            <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Invoice No</th>
+                                <th>Customer</th>
+                                <th>Sales Person</th>
+                                <th>Payment Method</th>
+                                <th>Opening Due</th>
+                                <th>Total Amount</th>
+                                <th>Receive Amount</th>
+                                <th>Due Amount</th>
+                                <th>Next Payment Date</th>
+                                <th>Note</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @foreach($nextDayPayments as $payment)
+                                <tr>
+                                    <td>{{ $payment->date->format('d-m-Y') }}</td>
+                                    <td>{{ $payment->invoice_no ?? 'N/A' }}</td>
+                                    <td>{{ $payment->customer->name ?? 'N/A' }}</td>
+                                    <td>{{ $payment->salesPerson->name ?? 'N/A' }}</td>
+                                    <td>
+                                        @if($payment->transaction_method == 1)
+                                            Cash
+                                        @elseif($payment->transaction_method == 2)
+                                            Bank
+                                        @elseif($payment->transaction_method == 3)
+                                            Mobile Banking
+                                        @elseif($payment->transaction_method == 4)
+                                            Sale Adjustment Discount
+                                        @elseif($payment->transaction_method == 5)
+                                            Return Adjustment Amount
+                                        @else
+                                            {{ $payment->payment_method ?? 'Cash' }}
+                                        @endif
+                                    </td>
+                                    <td>৳{{ number_format($payment->opening_due_amount ?? 0, 2) }}</td>
+                                    <td>৳{{ number_format($payment->total_sales_amount ?? $payment->amount, 2) }}</td>
+                                    <td>৳{{ number_format($payment->receive_amount ?? $payment->amount, 2) }}</td>
+                                    <td>৳{{ number_format($payment->due_amount ?? 0, 2) }}</td>
+                                    <td>
+                                        @php
+                                            $nextPaymentDate = $payment->next_approximate_payment_date ?? $payment->next_payment_date;
+                                        @endphp
+                                        @if($nextPaymentDate)
+                                            {{ \Carbon\Carbon::parse($nextPaymentDate)->format('d-m-Y') }}
+                                        @else
+                                            N/A
+                                        @endif
+                                    </td>
+                                    <td>{{ $payment->note ?? 'N/A' }}</td>
+                                </tr>
+                            @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Payments Table -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="box box-success">
+                <div class="box-header with-border">
+                    <h3 class="box-title">Today's Payments</h3>
+                    <div class="box-tools pull-right">
+                        <button type="button" class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i>
+                        </button>
+                        <button type="button" class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
+                    </div>
+                </div>
+                <!-- /.box-header -->
+                <div class="box-body">
+                    <div class="table-responsive">
+                        <table id="today-payments-table" class="table table-bordered table-striped">
+                            <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Invoice No</th>
+                                <th>Customer</th>
+                                <th>Sales Person</th>
+                                <th>Payment Method</th>
+                                <th>Opening Due</th>
+                                <th>Total Amount</th>
+                                <th>Receive Amount</th>
+                                <th>Due Amount</th>
+                                <th>Note</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @foreach($todayPayments as $payment)
+                                <tr>
+                                    <td>{{ $payment->date->format('d-m-Y') }}</td>
+                                    <td>{{ $payment->invoice_no ?? 'N/A' }}</td>
+                                    <td>{{ $payment->customer->name ?? 'N/A' }}</td>
+                                    <td>{{ $payment->salesPerson->name ?? 'N/A' }}</td>
+                                    <td>
+                                        @if($payment->transaction_method == 1)
+                                            Cash
+                                        @elseif($payment->transaction_method == 2)
+                                            Bank
+                                        @elseif($payment->transaction_method == 3)
+                                            Mobile Banking
+                                        @elseif($payment->transaction_method == 4)
+                                            Sale Adjustment Discount
+                                        @elseif($payment->transaction_method == 5)
+                                            Return Adjustment Amount
+                                        @else
+                                            {{ $payment->payment_method ?? 'Cash' }}
+                                        @endif
+                                    </td>
+                                    <td>৳{{ number_format($payment->opening_due_amount ?? 0, 2) }}</td>
+                                    <td>৳{{ number_format($payment->total_sales_amount ?? $payment->amount, 2) }}</td>
+                                    <td>৳{{ number_format($payment->receive_amount ?? $payment->amount, 2) }}</td>
+                                    <td>৳{{ number_format($payment->due_amount ?? 0, 2) }}</td>
+                                    <td>{{ $payment->note ?? 'N/A' }}</td>
+                                </tr>
+                            @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -699,6 +845,18 @@
             $('#p_table').DataTable({ordering: false});
             
             $('#pending-cheques-table').DataTable({
+                ordering: false,
+                pageLength: 10,
+                responsive: true
+            });
+
+            $('#next-day-payments-table').DataTable({
+                ordering: false,
+                pageLength: 10,
+                responsive: true
+            });
+
+            $('#today-payments-table').DataTable({
                 ordering: false,
                 pageLength: 10,
                 responsive: true

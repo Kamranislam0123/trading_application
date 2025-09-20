@@ -185,8 +185,8 @@ class CommonController extends Controller
     {
         $employee_target = EmployeeTarget::where([
             'employee_id'=> $request->employee_id,
-            'month'=> $request->month,
-            'year'=> $request->year,
+            'from_date'=> $request->from_date,
+            'to_date'=> $request->to_date,
             ])->first();
         if($employee_target){
             return $employee_target->amount;

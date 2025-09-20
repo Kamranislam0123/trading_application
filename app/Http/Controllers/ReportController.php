@@ -1311,4 +1311,43 @@ class ReportController extends Controller
             ));
     }
 
+    public function employeeTargetCustomerWise(Request $request) {
+        $employees = \App\Model\Employee::orderBy('name')->get();
+        $customers = \App\Model\Customer::where('status', 1)->orderBy('name')->get();
+        
+        $employeeId = $request->employee_id;
+        $customerId = $request->customer_id;
+        $year = $request->year ?? date('Y');
+        
+        // Get employee targets
+        $query = \App\Model\EmployeeTarget::with(['employee'])
+            ->where('year', $year);
+            
+        if ($employeeId) {
+            $query->where('employee_id', $employeeId);
+        }
+        
+        $targets = $query->orderBy('employee_id')->orderBy('from_date')->get();
+        
+        // Get customers for each employee
+        $employeeCustomers = [];
+        foreach ($targets as $target) {
+            $employeeId = $target->employee_id;
+            if (!isset($employeeCustomers[$employeeId])) {
+                $employeeCustomers[$employeeId] = \App\Model\Customer::where('employee_id', $employeeId)
+                    ->orderBy('name')
+                    ->get();
+            }
+        }
+        
+        // Filter customers if specific customer is selected
+        if ($customerId) {
+            foreach ($employeeCustomers as $empId => $customers) {
+                $employeeCustomers[$empId] = $customers->where('id', $customerId);
+            }
+        }
+        
+        return view('report.employee_target_customer_wise', compact('employees', 'customers', 'targets', 'employeeCustomers', 'employeeId', 'customerId', 'year'));
+    }
+
 }

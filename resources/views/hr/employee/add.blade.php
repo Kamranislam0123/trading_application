@@ -182,7 +182,6 @@
                             </div>
                         </div>
 
-
                         <div class="form-group {{ $errors->has('education_qualification') ? 'has-error' :'' }}">
                             <label class="col-sm-2 control-label">Education Qualification </label>
 

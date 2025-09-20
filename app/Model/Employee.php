@@ -38,4 +38,5 @@ class Employee extends Model
     public function leaves() {
         return $this->hasMany(Leave::class);
     }
+
 }

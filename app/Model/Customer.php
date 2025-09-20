@@ -7,6 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 class Customer extends Model
 {
     protected $guarded = [];
+    
+    protected $fillable = [
+        'name', 'mobile_no', 'address', 'status', 'employee_id'
+    ];
 
     public function getDueAttribute() {
         $customer = Customer::find($this->id);
@@ -105,5 +109,13 @@ class Customer extends Model
         $orders = SalesOrder::where('customer_id', $this->id)->pluck('id');
         $totalQuantity = SalesOrderProduct::whereIn('sales_order_id',$orders)->sum('quantity');
         return $totalQuantity;
+    }
+
+    public function employees() {
+        return $this->hasMany(Employee::class);
+    }
+
+    public function employee() {
+        return $this->belongsTo(Employee::class);
     }
 }

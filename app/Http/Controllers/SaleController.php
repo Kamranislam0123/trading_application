@@ -611,8 +611,9 @@ class SaleController extends Controller
 
     public function clientPaymentCustomer() {
         $banks = Bank::where('status', 1)->orderBy('name')->get();
+        $employees = \App\Model\Employee::orderBy('name')->get();
 
-        return view('sale.client_payment.customer_all', compact('banks'));
+        return view('sale.client_payment.customer_all', compact('banks', 'employees'));
     }
 
     public function clientPaymentSupplier() {
@@ -646,6 +647,7 @@ class SaleController extends Controller
             'payment_type' => 'required',
             'amount' => 'required|numeric|min:0',
             'date' => 'required|date',
+            'next_payment_date' => 'nullable|date',
             'note' => 'nullable|string|max:255',
         ];
 
@@ -685,6 +687,7 @@ class SaleController extends Controller
             $payment->transaction_method = $request->payment_type;
             $payment->amount = $request->amount;
             $payment->date = $request->date;
+            $payment->next_payment_date = $request->next_payment_date;
             $payment->note = $request->note;
             $payment->status = 2;
             $payment->save();
@@ -717,6 +720,7 @@ class SaleController extends Controller
             $payment->transaction_method = $request->payment_type;
             $payment->amount = $request->amount;
             $payment->date = $request->date;
+            $payment->next_payment_date = $request->next_payment_date;
             $payment->note = $request->note;
             $payment->status = 2;
             $payment->save();
@@ -743,6 +747,7 @@ class SaleController extends Controller
             $payment->transaction_method = $request->payment_type;
             $payment->amount = $request->amount;
             $payment->date = $request->date;
+            $payment->next_payment_date = $request->next_payment_date;
             $payment->note = $request->note;
             $payment->status = 2;
             $payment->save();
@@ -814,7 +819,7 @@ class SaleController extends Controller
             $log->save();
         }
 
-        return response()->json(['success' => true, 'message' => 'Payment has been completed.', 'redirect_url' => route('sale_receipt.payment_details', ['payment' => $payment->id])]);
+        return response()->json(['success' => true, 'message' => 'Payment has been completed.', 'redirect_url' => route('client_payment.customer.all')]);
     }
 
     public function voucherUpdate(Request $request) {
@@ -856,7 +861,7 @@ class SaleController extends Controller
                     $log->save();
                 }
 
-                return response()->json(['success' => true, 'message' => 'Payment has been Updated.', 'redirect_url' => route('sale_receipt.payment_details', ['payment' => $payment->id])]);
+                return response()->json(['success' => true, 'message' => 'Payment has been Updated.', 'redirect_url' => route('customer')]);
             }
 
     public function chequeApproved(Request $request) {
@@ -1018,7 +1023,7 @@ class SaleController extends Controller
                 ->first();
 
             if (empty($bankAccount)) {
-                return response()->json(['success' => false, 'message' => 'Storage Bank Not Found', 'redirect_url' => route('customer_payments', ['customer_id' => $payment->customer->id])]);
+                return response()->json(['success' => false, 'message' => 'Storage Bank Not Found', 'redirect_url' => route('customer')]);
             }
 
 
@@ -1089,7 +1094,7 @@ class SaleController extends Controller
             $message = '';
         }
         
-        return response()->json(['success' => true, 'message' => $message, 'redirect_url' => route('customer_payments', ['customer_id' => $payment->customer->id])]);
+        return response()->json(['success' => true, 'message' => $message, 'redirect_url' => route('customer')]);
     }
 
     public function updateDateOnly(Request $request) {
@@ -1648,11 +1653,12 @@ class SaleController extends Controller
         // Build query based on user's company branch
         $query = SalePayment::where('status', 1)->with(['customer', 'salesPerson']);
         
-        if(Auth::user()->company_branch_id==1){
-            $query->where('company_branch_id',1);
-        }elseif (Auth::user()->company_branch_id==2){
-            $query->where('company_branch_id',2);
-        }
+        // Branch filtering commented out - show all payments regardless of branch
+        // if(Auth::user()->company_branch_id==1){
+        //     $query->where('company_branch_id',1);
+        // }elseif (Auth::user()->company_branch_id==2){
+        //     $query->where('company_branch_id',2);
+        // }
         
         // Apply search filters
         if($request->filled('customer_id')){
@@ -1671,12 +1677,32 @@ class SaleController extends Controller
             $query->whereDate('date', '<=', $request->date_to);
         }
         
-        $payments = $query->orderBy('date', 'desc')->paginate(10);
+        // Apply sorting
+        if($request->filled('sort_date')){
+            if($request->sort_date == 'newest'){
+                $query->orderBy('date', 'desc');
+            } elseif($request->sort_date == 'oldest'){
+                $query->orderBy('date', 'asc');
+            }
+        } else {
+            // Default sorting by date desc
+            $query->orderBy('date', 'desc');
+        }
+        
+        $payments = $query->paginate(10);
         
         // Update amounts for each payment to show invoice-wise amounts
         // and filter out fully paid payments (due = 0)
         $filteredPayments = collect();
         foreach ($payments as $payment) {
+            // First check if the customer is overall paid
+            $customerDueAmount = $this->calculateCustomerDueAmount($payment->customer);
+            
+            // If customer is overall paid, skip this payment
+            if ($customerDueAmount <= 0) {
+                continue;
+            }
+            
             // Calculate invoice-wise amounts for this specific payment/invoice
             $invoiceAmounts = $this->calculateInvoiceAmounts($payment);
             
@@ -1698,6 +1724,15 @@ class SaleController extends Controller
             }
         }
         
+        // Apply amount sorting if requested
+        if($request->filled('sort_amount')){
+            if($request->sort_amount == 'low_to_high'){
+                $filteredPayments = $filteredPayments->sortBy('due_amount');
+            } elseif($request->sort_amount == 'high_to_low'){
+                $filteredPayments = $filteredPayments->sortByDesc('due_amount');
+            }
+        }
+        
         // Create a new paginator with filtered results
         $payments = new \Illuminate\Pagination\LengthAwarePaginator(
             $filteredPayments,
@@ -1716,7 +1751,9 @@ class SaleController extends Controller
     public function adminPendingCheque(){
         $currentDate = date('Y-m-d');
         $banks = Bank::where('status',1)->orderBy('name')->get();
-        $payments = SalePayment::where('status', 1)->where('company_branch_id',0)->with(['customer'])->paginate(10);
+        // Branch filtering commented out - show all payments regardless of branch
+        // $payments = SalePayment::where('status', 1)->where('company_branch_id',0)->with(['customer'])->paginate(10);
+        $payments = SalePayment::where('status', 1)->with(['customer'])->paginate(10);
         
         // Update due amounts for each payment to match customer model calculation
         // and filter out fully paid payments (due = 0)
@@ -1752,7 +1789,9 @@ class SaleController extends Controller
     public function yourChoicePendingCheque(){
         $currentDate = date('Y-m-d');
         $banks = Bank::where('status',1)->orderBy('name')->get();
-        $payments = SalePayment::where('status', 1)->where('company_branch_id',1)->with(['customer'])->paginate(10);
+        // Branch filtering commented out - show all payments regardless of branch
+        // $payments = SalePayment::where('status', 1)->where('company_branch_id',1)->with(['customer'])->paginate(10);
+        $payments = SalePayment::where('status', 1)->with(['customer'])->paginate(10);
         
         // Update due amounts for each payment to match customer model calculation
         // and filter out fully paid payments (due = 0)
@@ -1788,7 +1827,9 @@ class SaleController extends Controller
     public function yourChoicePlusPendingCheque(){
         $currentDate = date('Y-m-d');
         $banks = Bank::where('status',1)->orderBy('name')->get();
-        $payments = SalePayment::where('status', 1)->where('company_branch_id',2)->with(['customer'])->paginate(10);
+        // Branch filtering commented out - show all payments regardless of branch
+        // $payments = SalePayment::where('status', 1)->where('company_branch_id',2)->with(['customer'])->paginate(10);
+        $payments = SalePayment::where('status', 1)->with(['customer'])->paginate(10);
         
         // Update due amounts for each payment to match customer model calculation
         // and filter out fully paid payments (due = 0)
@@ -2210,14 +2251,73 @@ class SaleController extends Controller
             ->toJson();
     }
 
-    public function clientPaymentCustomerDatatable()
+    public function clientPaymentCustomerDatatable(Request $request)
     {
         if (Auth::user()->company_branch_id == 0) {
-            $query = Customer::query();
+            $query = Customer::with('employee');
         }else{
-            $query = Customer::where('company_branch_id', Auth::user()->company_branch_id);
+            $query = Customer::where('company_branch_id', Auth::user()->company_branch_id)->with('employee');
         }
 
+        // Apply sales person filter if provided
+        if ($request->filled('employee_id')) {
+            $query->where('employee_id', $request->employee_id);
+        }
+
+        // Apply sorting based on request parameters
+        if ($request->filled('total_amount_sort')) {
+            // Use raw SQL to calculate total for sorting
+            $query->selectRaw('customers.*, (
+                COALESCE((
+                    SELECT SUM(
+                        CASE 
+                            WHEN so.total = 0 OR so.return_amount > 0 THEN (so.sub_total - so.discount)
+                            ELSE so.total 
+                        END
+                    ) 
+                    FROM sales_orders so 
+                    WHERE so.customer_id = customers.id
+                ), 0) + 
+                COALESCE((
+                    SELECT SUM(DISTINCT sp.total_sales_amount) 
+                    FROM sale_payments sp 
+                    WHERE sp.customer_id = customers.id 
+                    AND sp.total_sales_amount IS NOT NULL 
+                    AND sp.total_sales_amount > 0
+                ), 0)
+            ) as calculated_total');
+            
+            if ($request->total_amount_sort == 'low_to_high') {
+                $query->orderBy('calculated_total', 'asc');
+            } elseif ($request->total_amount_sort == 'high_to_low') {
+                $query->orderBy('calculated_total', 'desc');
+            }
+        } elseif ($request->filled('next_payment_date_sort')) {
+            // Debug: Log the sorting parameter
+            \Log::info('Next payment date sort parameter: ' . $request->next_payment_date_sort);
+            \Log::info('All request parameters: ' . json_encode($request->all()));
+            
+            // Add subquery to get the next payment date from the most recent payment (matching the display logic)
+            $query->selectRaw('customers.*, (
+                SELECT sp.next_payment_date 
+                FROM sale_payments sp 
+                WHERE sp.customer_id = customers.id 
+                AND sp.next_payment_date IS NOT NULL
+                ORDER BY sp.date DESC, sp.id DESC
+                LIMIT 1
+            ) as latest_next_payment_date');
+            
+            if ($request->next_payment_date_sort == 'newest_to_oldest') {
+                $query->orderByRaw('ISNULL(latest_next_payment_date), latest_next_payment_date DESC');
+                \Log::info('Applied newest_to_oldest sorting');
+            } elseif ($request->next_payment_date_sort == 'oldest_to_newest') {
+                $query->orderByRaw('ISNULL(latest_next_payment_date), latest_next_payment_date ASC');
+                \Log::info('Applied oldest_to_newest sorting');
+            }
+        } else {
+            // Default sorting by name
+            $query->orderBy('name', 'asc');
+        }
 
         return DataTables::eloquent($query)
             ->addColumn('action', function (Customer $customer) {
@@ -2237,6 +2337,9 @@ class SaleController extends Controller
             ->addColumn('opening_due', function (Customer $customer) {
                 return number_format($customer->opening_due * nbrCalculation(), 2);
             })
+            ->addColumn('employee', function (Customer $customer) {
+                return $customer->employee ? $customer->employee->name : 'Not Assigned';
+            })
             ->addColumn('branch', function (Customer $customer) {
                 return $customer->branch->name??'';
             })
@@ -2246,6 +2349,19 @@ class SaleController extends Controller
             ->addColumn('due', function (Customer $customer) {
                 return number_format($customer->due * nbrCalculation(), 2);
             })
+            ->addColumn('next_payment_date', function (Customer $customer) {
+                // Get the most recent next payment date from the customer's payments
+                $latestPayment = \App\Model\SalePayment::where('customer_id', $customer->id)
+                    ->whereNotNull('next_payment_date')
+                    ->orderBy('date', 'desc')
+                    ->first();
+                
+                if ($latestPayment && $latestPayment->next_payment_date) {
+                    return \Carbon\Carbon::parse($latestPayment->next_payment_date)->format('j F, Y');
+                }
+                
+                return '<span class="text-muted">Not Set</span>';
+            })
             ->addColumn('status', function (Customer $customer) {
                 $dueAmount = $customer->due * nbrCalculation();
                 if ($dueAmount <= 0) {
@@ -2254,7 +2370,7 @@ class SaleController extends Controller
                     return '<span class="label label-warning">Due: ' . number_format($dueAmount, 2) . '</span>';
                 }
             })
-            ->rawColumns(['action', 'status'])
+            ->rawColumns(['action', 'status', 'next_payment_date'])
             ->toJson();
     }
 
@@ -2285,6 +2401,7 @@ class SaleController extends Controller
         }
         
         // Calculate payments made for this specific invoice
+        // First, try to find payments with the same invoice_no
         $paymentsForThisInvoice = SalePayment::where('customer_id', $payment->customer_id)
             ->where('invoice_no', $payment->invoice_no)
             ->where('status', 2) // Only approved payments
@@ -2296,6 +2413,28 @@ class SaleController extends Controller
             ->where('invoice_no', $payment->invoice_no)
             ->where('status', 1) // Pending payments
             ->sum('receive_amount');
+        
+        // If no payments found with same invoice_no, check if customer is overall paid
+        // This handles cases where payments were made without specifying invoice_no
+        if ($paymentsForThisInvoice == 0 && $pendingForThisInvoice == 0) {
+            // Get all approved payments for this customer (excluding returns)
+            $allCustomerPayments = SalePayment::where('customer_id', $payment->customer_id)
+                ->where('status', 2)
+                ->where('transaction_method', '!=', 5)
+                ->sum('amount');
+            
+            // Get all pending received amounts for this customer
+            $allCustomerPending = SalePayment::where('customer_id', $payment->customer_id)
+                ->where('status', 1)
+                ->sum('receive_amount');
+            
+            $totalCustomerReceived = $allCustomerPayments + $allCustomerPending;
+            
+            // If customer is overall paid (total received >= total sales), then this invoice is also paid
+            if ($totalCustomerReceived >= $invoiceAmount) {
+                $paymentsForThisInvoice = $invoiceAmount; // Mark as fully paid
+            }
+        }
         
         $totalReceivedForInvoice = $paymentsForThisInvoice + $pendingForThisInvoice;
         

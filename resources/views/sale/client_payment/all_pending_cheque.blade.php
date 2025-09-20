@@ -296,6 +296,44 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Sorting Filters Row -->
+                        <div class="row" style="margin-bottom: 20px;">
+                            <div class="col-md-3" style="padding-right: 25px;">
+                                <div class="form-group" style="margin-bottom: 25px;">
+                                    <label class="control-label" style="font-weight: 600; color: #495057; margin-bottom: 10px;">Sort by Date</label>
+                                    <select class="form-control" name="sort_date" id="sort_date" style="border-radius: 4px; border: 1px solid #ced4da;">
+                                        <option value="">Default Order</option>
+                                        <option value="newest" {{ request('sort_date') == 'newest' ? 'selected' : '' }}>Newest to Oldest</option>
+                                        <option value="oldest" {{ request('sort_date') == 'oldest' ? 'selected' : '' }}>Oldest to Newest</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3" style="padding-right: 25px;">
+                                <div class="form-group" style="margin-bottom: 25px;">
+                                    <label class="control-label" style="font-weight: 600; color: #495057; margin-bottom: 10px;">Sort by Amount</label>
+                                    <select class="form-control" name="sort_amount" id="sort_amount" style="border-radius: 4px; border: 1px solid #ced4da;">
+                                        <option value="">Default Order</option>
+                                        <option value="low_to_high" {{ request('sort_amount') == 'low_to_high' ? 'selected' : '' }}>Low to High Amount</option>
+                                        <option value="high_to_low" {{ request('sort_amount') == 'high_to_low' ? 'selected' : '' }}>High to Low Amount</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group" style="margin-bottom: 25px;">
+                                    <label class="control-label" style="font-weight: 600; color: #495057; margin-bottom: 10px;">&nbsp;</label>
+                                    <div style="display: flex; gap: 15px; align-items: flex-end; height: 34px;">
+                                        <button type="button" class="btn btn-info" id="apply-sorting" style="border-radius: 4px; padding: 8px 20px; font-weight: 500;">
+                                            <i class="fa fa-sort"></i> Apply Sorting
+                                        </button>
+                                        
+                                        <button type="button" class="btn btn-warning" id="clear-sorting" style="border-radius: 4px; padding: 8px 20px; font-weight: 500;">
+                                            <i class="fa fa-times"></i> Clear Sorting
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </form>
                 </div>
                 <div class="box-body">
@@ -529,7 +567,7 @@
                             </select>
                         </div>
 
-                        <div id="modal-bank-info">
+                        {{-- <div id="modal-bank-info">
                             <div class="form-group">
                                 <label>Storage Bank</label>
                                 <select class="form-control select2 modal-bank" name="bank">
@@ -564,7 +602,7 @@
                                 <label>Cheque Image</label>
                                 <input class="form-control" name="cheque_image" type="file">
                             </div>
-                        </div>
+                        </div> --}}
 
                         <div class="form-group">
                             <label>Date</label>
@@ -728,15 +766,15 @@
                 $('#modal-pay').modal('show');
             });
 
-            $('#modal-pay-type').change(function () {
-                if ($(this).val() == '1') {
-                    $('#modal-bank-info').hide();
-                } else {
-                    $('#modal-bank-info').show();
-                }
-            });
+            // $('#modal-pay-type').change(function () {
+            //     if ($(this).val() == '1') {
+            //         $('#modal-bank-info').hide();
+            //     } else {
+            //         $('#modal-bank-info').show();
+            //     }
+            // });
 
-            $('#modal-pay-type').trigger('change');
+            // $('#modal-pay-type').trigger('change');
 
             $('#modal-order').change(function () {
                 var orderId = $(this).val();
@@ -755,44 +793,44 @@
                 }
             });
 
-            $('.modal-bank').change(function () {
-                var bankId = $(this).val();
-                $('.modal-branch').html('<option value="">Select Branch</option>');
-                $('.modal-account').html('<option value="">Select Account</option>');
+            // $('.modal-bank').change(function () {
+            //     var bankId = $(this).val();
+            //     $('.modal-branch').html('<option value="">Select Branch</option>');
+            //     $('.modal-account').html('<option value="">Select Account</option>');
 
-                if (bankId != '') {
-                    $.ajax({
-                        method: "GET",
-                        url: "{{ route('get_branch') }}",
-                        data: { bankId: bankId }
-                    }).done(function( response ) {
-                        $.each(response, function( index, item ) {
-                            $('.modal-branch').append('<option value="'+item.id+'">'+item.name+'</option>');
-                        });
+            //     if (bankId != '') {
+            //         $.ajax({
+            //             method: "GET",
+            //             url: "{{ route('get_branch') }}",
+            //             data: { bankId: bankId }
+            //         }).done(function( response ) {
+            //             $.each(response, function( index, item ) {
+            //                 $('.modal-branch').append('<option value="'+item.id+'">'+item.name+'</option>');
+            //             });
 
-                        $('.modal-branch').trigger('change');
-                    });
-                }
+            //             $('.modal-branch').trigger('change');
+            //         });
+            //     }
 
-                $('.modal-branch').trigger('change');
-            });
+            //     $('.modal-branch').trigger('change');
+            // });
 
-            $('.modal-branch').change(function () {
-                var branchId = $(this).val();
-                $('.modal-account').html('<option value="">Select Account</option>');
+            // $('.modal-branch').change(function () {
+            //     var branchId = $(this).val();
+            //     $('.modal-account').html('<option value="">Select Account</option>');
 
-                if (branchId != '') {
-                    $.ajax({
-                        method: "GET",
-                        url: "{{ route('get_bank_account') }}",
-                        data: { branchId: branchId }
-                    }).done(function( response ) {
-                        $.each(response, function( index, item ) {
-                            $('.modal-account').append('<option value="'+item.id+'">'+item.account_no+'</option>');
-                        });
-                    });
-                }
-            });
+            //     if (branchId != '') {
+            //         $.ajax({
+            //             method: "GET",
+            //             url: "{{ route('get_bank_account') }}",
+            //             data: { branchId: branchId }
+            //         }).done(function( response ) {
+            //             $.each(response, function( index, item ) {
+            //                 $('.modal-account').append('<option value="'+item.id+'">'+item.account_no+'</option>');
+            //             });
+            //         });
+            //     }
+            // });
 
             // Validate receive amount
             $('#modal-receive-amount').on('input', function() {
@@ -1032,6 +1070,41 @@
 
             // Initial display
             updateTableDisplay();
+        });
+
+        // Sorting functionality
+        $(document).ready(function() {
+            // Apply sorting button
+            $('#apply-sorting').click(function() {
+                var form = $('form.search-form');
+                var url = form.attr('action');
+                var params = form.serialize();
+                
+                // Add sorting parameters
+                var sortDate = $('#sort_date').val();
+                var sortAmount = $('#sort_amount').val();
+                
+                if (sortDate) {
+                    params += '&sort_date=' + sortDate;
+                }
+                if (sortAmount) {
+                    params += '&sort_amount=' + sortAmount;
+                }
+                
+                window.location.href = url + '?' + params;
+            });
+            
+            // Clear sorting button
+            $('#clear-sorting').click(function() {
+                $('#sort_date').val('');
+                $('#sort_amount').val('');
+                
+                var form = $('form.search-form');
+                var url = form.attr('action');
+                var params = form.serialize();
+                
+                window.location.href = url + '?' + params;
+            });
         });
     </script>
 @endsection

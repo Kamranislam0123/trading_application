@@ -23,7 +23,7 @@
         <div class="col-md-12">
             <div class="box">
                 <div class="box-body table-responsive">
-                    <a class="btn btn-primary" href="{{ route('employee.add') }}">Add Employee</a>
+                    <a class="btn btn-primary" href="{{ route('employee.add') }}">Add </a>
 
                     <hr>
 
@@ -35,7 +35,6 @@
                             <th>Name</th>
                             <th>Department</th>
                             <th>Designation</th>
-                            <th>Type</th>
                             <th>Mobile</th>
                             <th>Action</th>
                         </tr>
@@ -113,12 +112,12 @@
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span></button>
-                    <h4 class="modal-title"> Employee Monthly Target </h4>
+                    <h4 class="modal-title"> Sales Person Monthly Target </h4>
                 </div>
                 <div class="modal-body">
                     <form id="modal-form-target" name="modal-form-target">
                         <div class="form-group">
-                            <label>Employee ID</label>
+                            <label>Sales Person ID</label>
                             <input class="form-control" id="modal-employee-id-target" disabled>
                         </div>
 
@@ -131,32 +130,25 @@
 
                         <div class="row">
                             <div class="form-group col-xs-6">
-                                <label> Month </label>
-                                <select class="form-control" id="modal-month" name="month">
-                                    <option value="">Select Month </option>
-                                    <option @if (date('m') == 1) selected @endif value="01"> January </option>
-                                    <option @if (date('m') == 2) selected @endif value="02"> February </option>
-                                    <option @if (date('m') == 3) selected @endif value="03"> March </option>
-                                    <option @if (date('m') == 4) selected @endif value="04"> April </option>
-                                    <option @if (date('m') == 5) selected @endif value="05"> May </option>
-                                    <option @if (date('m') == 6) selected @endif value="06"> June </option>
-                                    <option @if (date('m') == 7) selected @endif value="07"> July </option>
-                                    <option @if (date('m') == 8) selected @endif value="08"> August </option>
-                                    <option @if (date('m') == 9) selected @endif value="09"> September </option>
-                                    <option @if (date('m') == 10) selected @endif value="10"> October </option>
-                                    <option @if (date('m') == 11) selected @endif value="11"> Nobember </option>
-                                    <option @if (date('m') == 12) selected @endif value="12"> December </option>
-                                </select>
+                                <label> From Date </label>
+                                <div class="input-group date">
+                                    <div class="input-group-addon">
+                                        <i class="fa fa-calendar"></i>
+                                    </div>
+                                    <input type="text" class="form-control pull-right" id="modal-from-date" name="from_date" 
+                                           value="{{ date('Y-m-d') }}" autocomplete="off" readonly>
+                                </div>
                             </div>
 
                             <div class="form-group col-xs-6">
-                                <label> Year </label>
-                                <select class="form-control" id="modal-year" name="year">
-                                    <option value="">Select Year</option>
-                                    @for ($i = 2020; $i < 2035; $i++)
-                                        <option @if (date('Y') == $i) selected @endif value="{{ $i }}"> {{ $i }} </option>
-                                    @endfor
-                                </select>
+                                <label> To Date </label>
+                                <div class="input-group date">
+                                    <div class="input-group-addon">
+                                        <i class="fa fa-calendar"></i>
+                                    </div>
+                                    <input type="text" class="form-control pull-right" id="modal-to-date" name="to_date" 
+                                           value="{{ date('Y-m-d') }}" autocomplete="off" readonly>
+                                </div>
                             </div>
                         </div>
 
@@ -201,7 +193,6 @@
                     {data: 'name', name: 'name'},
                     {data: 'department', name: 'department.name'},
                     {data: 'designation', name: 'designation.name'},
-                    {data: 'employee_type', name: 'employee_type'},
                     {data: 'mobile_no', name: 'mobile_no'},
                     {data: 'action', name: 'action', orderable: false},
                 ],
@@ -212,6 +203,13 @@
             $('#date').datepicker({
                 autoclose: true,
                 format: 'yyyy-mm-dd'
+            });
+
+            //Date picker for target modal
+            $('#modal-from-date, #modal-to-date').datepicker({
+                autoclose: true,
+                format: 'yyyy-mm-dd',
+                todayHighlight: true
             });
 
             $('body').on('click', '.btn-change-designation', function () {
@@ -303,29 +301,40 @@
                 });
             });
 
-            $('#modal-month, #modal-year').change(function () {
+            $('#modal-from-date, #modal-to-date').change(function () {
                 getEmployeeTarget();
             });
 
             function getEmployeeTarget(){
-                var year = $('#modal-year').val();
-                var month = $('#modal-month').val();
+                var from_date = $('#modal-from-date').val();
+                var to_date = $('#modal-to-date').val();
                 var employee_id = $('#modal-id-target').val();
-                // alert(employee_id);
 
-                if (employee_id != '') {
+                if (employee_id != '' && from_date != '' && to_date != '') {
                     $.ajax({
                         method: "GET",
                         url: "{{ route('get_employee_target') }}",
-                        data: { year: year,month:month,employee_id:employee_id }
+                        data: { from_date: from_date, to_date: to_date, employee_id: employee_id }
                     }).done(function( response ) {
-                        // alert(response);
                         $('#target_amount').val(response);
                     });
                 }
             }
 
             $('#modal-btn-target-update').click(function () {
+                var fromDate = $('#modal-from-date').val();
+                var toDate = $('#modal-to-date').val();
+                
+                // Validate date range
+                if (fromDate && toDate && fromDate > toDate) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid Date Range',
+                        text: 'From date cannot be after To date',
+                    });
+                    return;
+                }
+                
                 var formData = new FormData($('#modal-form-target')[0]);
 
                 $.ajax({
@@ -336,7 +345,7 @@
                     contentType: false,
                     success: function(response) {
                         if (response) {
-                            $('#modal-btn-target-update').modal('hide');
+                            $('#modal-employee-target').modal('hide');
                             Swal.fire(
                                 'Updated!',
                                 response,

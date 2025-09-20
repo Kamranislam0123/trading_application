@@ -14,7 +14,7 @@
         <div class="col-md-12">
             <div class="box">
                 <div class="box-header with-border">
-                    <h3 class="box-title">Employee Information</h3>
+                    <h3 class="box-title">Sales Person Information</h3>
                 </div>
                 <!-- /.box-header -->
                 <!-- form start -->
@@ -36,7 +36,7 @@
                         </div>
 
                         <div class="form-group {{ $errors->has('employee_id') ? 'has-error' :'' }}">
-                            <label class="col-sm-2 control-label">Employee ID *</label>
+                            <label class="col-sm-2 control-label">Sales Person ID *</label>
 
                             <div class="col-sm-10">
                                 <input type="text" class="form-control" placeholder="Enter Employee ID"
@@ -144,8 +144,8 @@
                         </div>
 
 
-                        {{--<div class="form-group {{ $errors->has('department') ? 'has-error' :'' }}">
-                            <label class="col-sm-2 control-label">Department *</label>
+                        <div class="form-group {{ $errors->has('department') ? 'has-error' :'' }}">
+                            <label class="col-sm-2 control-label">Department</label>
 
                             <div class="col-sm-10">
                                 <select class="form-control" name="department" id="department">
@@ -164,7 +164,7 @@
                         </div>
 
                         <div class="form-group {{ $errors->has('designation') ? 'has-error' :'' }}">
-                            <label class="col-sm-2 control-label">Designation *</label>
+                            <label class="col-sm-2 control-label">Designation</label>
 
                             <div class="col-sm-10">
                                 <select class="form-control" name="designation" id="designation">
@@ -175,10 +175,10 @@
                                 <span class="help-block">{{ $message }}</span>
                                 @enderror
                             </div>
-                        </div>--}}
+                        </div>
 
                         <div class="form-group {{ $errors->has('employee_type') ? 'has-error' :'' }}">
-                            <label class="col-sm-2 control-label">Employee Type *</label>
+                            <label class="col-sm-2 control-label">Sales Person Type *</label>
 
                             <div class="col-sm-10">
                                 <select class="form-control" name="employee_type" >

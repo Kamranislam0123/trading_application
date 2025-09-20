@@ -16,9 +16,10 @@
             <div class="nav-tabs-custom">
                 <ul class="nav nav-tabs">
                     <li class="active"><a href="#profile" data-toggle="tab">Profile</a></li>
-                    <li><a href="#salary" data-toggle="tab">Salary</a></li>
-                    <li><a href="#designation_log" data-toggle="tab">Designation Log</a></li>
-                    <li><a href="#leave" data-toggle="tab">Leave</a></li>
+                    {{-- <li><a href="#salary" data-toggle="tab">Salary</a></li> --}}
+                    {{-- <li><a href="#designation_log" data-toggle="tab">Designation Log</a></li> --}}
+                    <li><a href="#target" data-toggle="tab">Target</a></li>
+                    {{-- <li><a href="#leave" data-toggle="tab">Leave</a></li> --}}
                 </ul>
 
                 <div class="tab-content">
@@ -212,7 +213,7 @@
                     </div>
                     <!-- /.tab-pane -->
 
-                    <div class="tab-pane" id="salary">
+                    {{-- <div class="tab-pane" id="salary">
 
                         <div class="table-responsive">
                             <table class="table table-bordered">
@@ -297,10 +298,10 @@
                         </div>
 
 
-                    </div>
+                    </div> --}}
                     <!-- /.tab-pane -->
 
-                    <div class="tab-pane" id="designation_log">
+                    {{-- <div class="tab-pane" id="designation_log">
                         <div class="table-responsive">
                             <table class="table no-margin">
                                 <thead>
@@ -327,10 +328,95 @@
                                 </tbody>
                             </table>
                         </div>
+                    </div> --}}
+                    <!-- /.tab-pane -->
+
+                    <div class="tab-pane" id="target">
+                        <button class="pull-right btn btn-primary" onclick="getprinttarget('prinarea_target')">Print</button><br>
+
+                        <div id="prinarea_target">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="box" style="border: 0px solid">
+                                        <div class="box-header with-border">
+                                            <h3 class="box-title">Filter</h3>
+                                        </div>
+                                        <!-- /.box-header -->
+
+                                        <div class="box-body">
+                                            <div class="row">
+                                                <div class="col-md-4">
+                                                    <div class="form-group">
+                                                        <label>Year</label>
+                                                        <select class="form-control" id="target-year">
+                                                            @for($i=2020; $i <= date('Y') + 1; $i++)
+                                                                <option value="{{ $i }}" {{ $i == date('Y') ? 'selected' : '' }}>{{ $i }}</option>
+                                                            @endfor
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive" id="target-table">
+                                <table class="table table-bordered">
+                                    <thead>
+                                    <tr>
+                                        <th>From Date</th>
+                                        <th>To Date</th>
+                                        <th>Target Amount</th>
+                                        <th>Status</th>
+                                        <th>Created At</th>
+                                    </tr>
+                                    </thead>
+
+                                    <tbody>
+                                    @foreach($targets as $target)
+                                        <tr>
+                                            <td>
+                                                @if($target->from_date)
+                                                    {{ \Carbon\Carbon::parse($target->from_date)->format('j F, Y') }}
+                                                @else
+                                                    N/A
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($target->to_date)
+                                                    {{ \Carbon\Carbon::parse($target->to_date)->format('j F, Y') }}
+                                                @else
+                                                    N/A
+                                                @endif
+                                            </td>
+                                            <td>৳{{ number_format($target->amount, 2) }}</td>
+                                            <td>
+                                                @if($target->status == 1)
+                                                    <span class="label label-success">Active</span>
+                                                @else
+                                                    <span class="label label-danger">Inactive</span>
+                                                @endif
+                                            </td>
+                                            <td>{{ $target->created_at->format('j F, Y') }}</td>
+                                        </tr>
+                                    @endforeach
+                                    </tbody>
+
+                                    <tfoot>
+                                    <tr>
+                                        <th colspan="2">Total Target Amount</th>
+                                        <th>৳{{ number_format($targets->sum('amount'), 2) }}</th>
+                                        <th colspan="2"></th>
+                                    </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                     <!-- /.tab-pane -->
 
-                    <div class="tab-pane" id="leave">
+                    {{-- <div class="tab-pane" id="leave">
                         <button class="pull-right btn btn-primary" onclick="getprintleave('prinarea_leave')">Print</button><br>
 
                         <div class="row">
@@ -406,7 +492,7 @@
                             </div>
                         </div>
 
-                    </div>
+                    </div> --}}
                     <!-- /.tab-pane -->
                 </div>
                 <!-- /.tab-content -->
@@ -424,7 +510,7 @@
 
     <script>
         $(function () {
-            $('#leave-year').change(function () {
+            {{-- $('#leave-year').change(function () {
                 var year = $(this).val();
                 var employeeId = '{{ $employee->id }}';
 
@@ -434,6 +520,19 @@
                     data: { year: year, employeeId: employeeId }
                 }).done(function( response ) {
                     $('#leave-table').html(response.html);
+                });
+            }); --}}
+
+            $('#target-year').change(function () {
+                var year = $(this).val();
+                var employeeId = '{{ $employee->id }}';
+
+                $.ajax({
+                    method: "POST",
+                    url: "{{ route('employee.get_targets') }}",
+                    data: { year: year, employeeId: employeeId }
+                }).done(function( response ) {
+                    $('#target-table').html(response.html);
                 });
             });
         })
@@ -447,7 +546,7 @@
             window.print();
             window.location.replace(APP_URL)
         }
-        function getprintleave(prinarea_leave) {
+        {{-- function getprintleave(prinarea_leave) {
 
             $('body').html($('#'+prinarea_leave).html());
             window.print();
@@ -456,6 +555,12 @@
         function getprintleave(prinarea_salary) {
 
             $('body').html($('#'+prinarea_salary).html());
+            window.print();
+            window.location.replace(APP_URL)
+        } --}}
+        function getprinttarget(prinarea_target) {
+
+            $('body').html($('#'+prinarea_target).html());
             window.print();
             window.location.replace(APP_URL)
         }
