@@ -253,6 +253,7 @@
             $('#sale_order_no').html('<option value="">Select Sale Order</option>');
 
             if (customerId != '') {
+                // Get sale orders for the customer
                 $.ajax({
                     method: "GET",
                     url: "{{ route('get_sale_order') }}",
@@ -265,6 +266,23 @@
                             $('#sale_order_no').append('<option value="'+item.id+'">'+item.order_no+'</option>');
                     });
                 });
+
+                // Auto-select the assigned sales person for the customer
+                $.ajax({
+                    method: "GET",
+                    url: "{{ route('get_customer_sales_person') }}",
+                    data: { customerId: customerId }
+                }).done(function( response ) {
+                    if (response.success && response.sales_person_id) {
+                        $('#sales_person_id').val(response.sales_person_id).trigger('change');
+                    }
+                }).fail(function() {
+                    // If no sales person is assigned, keep the current selection or reset to empty
+                    console.log('No sales person assigned to this customer');
+                });
+            } else {
+                // Reset sales person selection when no customer is selected
+                $('#sales_person_id').val('').trigger('change');
             }
         });
 

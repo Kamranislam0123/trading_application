@@ -575,7 +575,10 @@
                                     <a href="{{ route('report.client_statement') }}"><i class="fa fa-circle-o"></i> Client Report</a>
                                 </li>
                                 <li class="{{ Route::currentRouteName() == 'report.employee_target_customer_wise' ? 'active' : '' }}">
-                                    <a href="{{ route('report.employee_target_customer_wise') }}"><i class="fa fa-circle-o"></i> Sales Target Customer Wise</a>
+                                    <a href="{{ route('report.employee_target_customer_wise') }}"><i class="fa fa-circle-o"></i> SR Wise Sales Report</a>
+                                </li>
+                                <li class="{{ Route::currentRouteName() == 'report.sr_wise_collection' ? 'active' : '' }}">
+                                    <a href="{{ route('report.sr_wise_collection') }}"><i class="fa fa-circle-o"></i> SR Wise Collection Report</a>
                                 </li>
                             @endcan
                             <!-- @can('client_summary')

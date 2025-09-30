@@ -403,6 +403,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('report/employee-list', 'ReportController@employeeList')->name('report.employee_list');
     Route::get('report/employee-attendance', 'ReportController@employeeAttendance')->name('report.employee_attendance')->middleware('permission:employee_attendance_report');
     Route::get('report/employee-target-customer-wise', 'ReportController@employeeTargetCustomerWise')->name('report.employee_target_customer_wise')->middleware('permission:client_summary');
+    Route::get('report/sr-wise-collection', 'ReportController@srWiseCollection')->name('report.sr_wise_collection')->middleware('permission:client_summary');
     Route::get('report/monthly-crm', 'ReportController@monthlyCRM')->name('report.monthly_crm');
     Route::get('report/product-in-out', 'ReportController@productInOut')->name('report.product_in_out');
     Route::get('report/branch-wise-client', 'ReportController@branchWiseClient')->name('report.branch_wise_client')->middleware('permission:client_summary');
@@ -413,6 +414,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('get-branch', 'CommonController@getBranch')->name('get_branch');
     Route::get('get-bank-account', 'CommonController@getBankAccount')->name('get_bank_account');
     Route::get('get-sale-order', 'CommonController@getSaleOrder')->name('get_sale_order');
+    Route::get('get-customer-sales-person', 'CommonController@getCustomerSalesPerson')->name('get_customer_sales_person');
     Route::get('get-customer', 'CommonController@getCustomer')->name('get_customer');
     Route::get('order-details', 'CommonController@orderDetails')->name('get_order_details');
     Route::get('get-account-head-type', 'CommonController@getAccountHeadType')->name('get_account_head_type');

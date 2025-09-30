@@ -68,7 +68,7 @@
 
                     <div id="prinarea">
                         <div style="padding:10px; width:100%; text-align:center;">
-                            <h2>{{ config('app.name', 'Bio-Access Tech Co.') }}</h2>
+                            <h2>{{ config('app.name', 'AT International') }}</h2>
                             <h4>#House: 9, Road:2/2-1b,Banani, Dhaka-1213, Bangladesh.tel : 02-55040826</h4>
                             <h4>Sub Client Report</h4>
                         </div>

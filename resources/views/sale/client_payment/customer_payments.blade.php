@@ -62,7 +62,7 @@
                                     <td>{{ $payment->note }}</td>
                                     <td>
                                         @if ($payment->company_branch_id == 0)
-                                            MD.AJMAIN HOSAN BHUYAN
+                                           AT International
                                         @elseif($payment->company_branch_id == 1)
                                             Your Choice
                                         @else
@@ -269,7 +269,8 @@
                     url: "{{ route('payment_voucher.delete') }}",
                     data: { id: paymentId,customer_id:customer_id }
                 }).done(function( msg ) {
-                    location.reload();
+
+                    // location.reload();
                 });
             });
 

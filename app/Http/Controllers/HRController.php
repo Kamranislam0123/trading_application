@@ -42,53 +42,51 @@ class HRController extends Controller
 
 
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'nullable|string|email|max:255',
-            'password' => 'nullable|string|max:255',
-            'date_of_birth' => 'nullable|date',
-            'joining_date' => 'nullable|date',
-            'confirmation_date' => 'nullable|date',
-            'department' => 'required',
-            'designation' => 'required',
-            'education_qualification' => 'nullable|max:255',
-            'employee_type' => 'nullable',
+            'name' => 'nullable|string|max:255',
+            'date_of_birth' => 'nullable|date|before:today',
+            'joining_date' => 'nullable|date|before_or_equal:today',
+            'confirmation_date' => 'nullable|date|after_or_equal:joining_date',
+            'department' => 'nullable|exists:departments,id',
+            'designation' => 'nullable|exists:designations,id',
+            'education_qualification' => 'nullable|string|max:255',
+            'employee_type' => 'nullable|in:1,2',
             'reporting_to' => 'nullable|string|max:255',
-            'gender' => 'nullable',
-            'marital_status' => 'nullable',
-            'mobile_no' => 'nullable|string|max:15',
+            'gender' => 'nullable|in:1,2',
+            'marital_status' => 'nullable|in:1,2',
+            'mobile_no' => 'nullable|string|regex:/^[0-9]{11}$/',
             'father_name' => 'nullable|string|max:255',
             'mother_name' => 'nullable|string|max:255',
-            'emergency_contact' => 'required|string|max:255',
+            'emergency_contact' => 'nullable|string|max:255',
             'signature' => 'nullable|file|mimes:jpeg,png,jpg,gif|max:2048',
             'photo' => 'nullable|file|mimes:jpeg,png,jpg,gif|max:2048',
-            'present_address' => 'nullable|string|max:255',
-            'permanent_address' => 'nullable|string|max:255',
-            'religion' => 'nullable',
+            'present_address' => 'nullable|string|max:500',
+            'permanent_address' => 'nullable|string|max:500',
+            'religion' => 'nullable|in:1,2,3,4',
             'cv' => 'nullable|file|mimes:doc,pdf,docx|max:5120',
-            'gross_salary' => 'nullable|numeric',
-            'bank_name' => 'nullable|max:255',
-            'bank_branch' => 'nullable|max:255',
-            'bank_account' => 'nullable',
-            'previous_salary' => 'nullable|numeric',
+            'gross_salary' => 'nullable|numeric|min:0',
+            'bank_name' => 'nullable|string|max:255',
+            'bank_branch' => 'nullable|string|max:255',
+            'bank_account' => 'nullable|string|max:255',
+            'previous_salary' => 'nullable|numeric|min:0',
         ]);
 
         // Create User 
         $user = new User();
-        $user->name = $request->name;
+        $user->name = $request->name ?: 'Employee';
         
-        // Handle email - check if provided email is unique, otherwise generate one
-        if ($request->email) {
-            $existingUser = User::where('email', $request->email)->first();
-            if ($existingUser) {
-                $user->email = 'employee_' . $request->employee_id . '@company.com';
-            } else {
-                $user->email = $request->email;
-            }
-        } else {
-            $user->email = 'employee_' . $request->employee_id . '@company.com';
+        // Generate unique email
+        $baseEmail = 'employee_' . $request->employee_id . '@company.com';
+        $email = $baseEmail;
+        $counter = 1;
+        
+        // Check if email exists and generate unique one
+        while (User::where('email', $email)->exists()) {
+            $email = 'employee_' . $request->employee_id . '_' . $counter . '@company.com';
+            $counter++;
         }
         
-        $user->password = bcrypt($request->password ?: 'password123');
+        $user->email = $email;
+        $user->password = bcrypt('password123');
         $user->save();
         $user->syncPermissions($request->permission);
 
@@ -147,7 +145,7 @@ class HRController extends Controller
         $employee->mobile_no = $request->mobile_no ?: 'Not Provided';
         $employee->father_name = $request->father_name ?: 'Not Specified';
         $employee->mother_name = $request->mother_name ?: 'Not Specified';
-        $employee->emergency_contact = $request->emergency_contact;
+        $employee->emergency_contact = $request->emergency_contact ?: 'Not Provided';
         $employee->signature = $signature;
         $employee->photo = $photo;
         $employee->present_address = $request->present_address ?: 'Not Provided';
@@ -208,33 +206,30 @@ class HRController extends Controller
     public function employeeEditPost(Employee $employee, Request $request) {
 
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'nullable|string|email|max:255|unique:employees,email,'. $employee->id,
-            'date_of_birth' => 'nullable|date',
-            'joining_date' => 'nullable|date',
-            'confirmation_date' => 'nullable|date',
-            'education_qualification' => 'nullable|max:255',
+            'name' => 'nullable|string|max:255',
+            'date_of_birth' => 'nullable|date|before:today',
+            'joining_date' => 'nullable|date|before_or_equal:today',
+            'confirmation_date' => 'nullable|date|after_or_equal:joining_date',
+            'education_qualification' => 'nullable|string|max:255',
             'department' => 'nullable|exists:departments,id',
             'designation' => 'nullable|exists:designations,id',
-            'employee_type' => 'required',
+            'employee_type' => 'nullable|in:1,2',
             'reporting_to' => 'nullable|string|max:255',
-            'gender' => 'required',
-            'marital_status' => 'required',
-            'mobile_no' => 'nullable|digits:11',
+            'gender' => 'nullable|in:1,2',
+            'marital_status' => 'nullable|in:1,2',
+            'mobile_no' => 'nullable|string|regex:/^[0-9]{11}$/',
             'father_name' => 'nullable|string|max:255',
             'mother_name' => 'nullable|string|max:255',
-            'emergency_contact' => 'required|string|max:255',
-            'signature' => 'nullable|image',
-            'photo' => 'nullable|image',
-            'present_address' => 'required|string|max:255',
-            'permanent_address' => 'required|string|max:255',
-            'religion' => 'required',
-            'cv' => 'nullable|mimes:doc,pdf,docx',
-            // 'bank_name' => 'nullable|max:255',
-            // 'bank_branch' => 'nullable|max:255',
-            // 'bank_account' => 'nullable|max:255',
-            Rule::unique('employees')->ignore($employee->id),
-
+            'emergency_contact' => 'nullable|string|max:255',
+            'signature' => 'nullable|file|mimes:jpeg,png,jpg,gif|max:2048',
+            'photo' => 'nullable|file|mimes:jpeg,png,jpg,gif|max:2048',
+            'present_address' => 'nullable|string|max:500',
+            'permanent_address' => 'nullable|string|max:500',
+            'religion' => 'nullable|in:1,2,3,4',
+            'cv' => 'nullable|file|mimes:doc,pdf,docx|max:5120',
+            'bank_name' => 'nullable|string|max:255',
+            'bank_branch' => 'nullable|string|max:255',
+            'bank_account' => 'nullable|string|max:255',
         ]);
 
         // Update User Info 
@@ -305,12 +300,11 @@ class HRController extends Controller
         $employee->mobile_no = $request->mobile_no ?: 'Not Provided';
         $employee->father_name = $request->father_name ?: 'Not Specified';
         $employee->mother_name = $request->mother_name ?: 'Not Specified';
-        $employee->emergency_contact = $request->emergency_contact;
+        $employee->emergency_contact = $request->emergency_contact ?: 'Not Provided';
         $employee->signature = $signature;
         $employee->photo = $photo;
         $employee->present_address = $request->present_address ?: 'Not Provided';
         $employee->permanent_address = $request->permanent_address ?: 'Not Provided';
-        $employee->email = $request->email;
         $employee->religion = $request->religion ?: 'Not Specified';
         $employee->cv = $cv;
         $employee->bank_name =$request->bank_name;
@@ -327,9 +321,8 @@ class HRController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Get employee targets for the current year
+        // Get all employee targets
         $targets = EmployeeTarget::where('employee_id', $employee->id)
-            ->where('year', date('Y'))
             ->orderBy('from_date', 'desc')
             ->get();
 
@@ -348,10 +341,22 @@ class HRController extends Controller
     }
 
     public function getTargets(Request $request) {
-        $targets = EmployeeTarget::where('employee_id', $request->employeeId)
-            ->where('year', $request->year)
-            ->orderBy('from_date', 'desc')
-            ->get();
+        $query = EmployeeTarget::where('employee_id', $request->employeeId);
+        
+        // Apply date range filters
+        if ($request->from_date && $request->to_date) {
+            // Filter targets that overlap with the selected date range
+            $query->where('from_date', '<=', $request->to_date)
+                  ->where('to_date', '>=', $request->from_date);
+        } elseif ($request->from_date) {
+            // If only from date is provided, get targets that end on or after this date
+            $query->where('to_date', '>=', $request->from_date);
+        } elseif ($request->to_date) {
+            // If only to date is provided, get targets that start on or before this date
+            $query->where('from_date', '<=', $request->to_date);
+        }
+        
+        $targets = $query->orderBy('from_date', 'desc')->get();
 
         $html = view('partials.target_table', compact('targets'))->render();
 
@@ -391,10 +396,10 @@ class HRController extends Controller
 
         return DataTables::eloquent($query)
             ->addColumn('department', function(Employee $employee) {
-                return $employee->department->name;
+                return $employee->department ? $employee->department->name : 'Not Assigned';
             })
             ->addColumn('designation', function(Employee $employee) {
-                return $employee->designation->name;
+                return $employee->designation ? $employee->designation->name : 'Not Assigned';
             })
             ->addColumn('action', function(Employee $employee) {
                 $btn = '<a class="btn btn-primary btn-sm btn-change-designation" role="button" data-id="' . $employee->id . '">Change Designation</a> ';

@@ -27,7 +27,7 @@ class DashboardController extends Controller
                 ->sum('total_sales_amount');
             $totalInvoiceAmount = $salesOrderTotal + $manualDueTotal;
             
-            $totalReceivedAmount = SalePayment::where('type', 1)->sum('amount');
+            $totalReceivedAmount = SalePayment::where('type', 1)->whereIn('status', [1, 2])->sum('amount');
             
             // Calculate total due amount by summing all customer due amounts
             $customers = Customer::where('status', 1)->get();
@@ -36,37 +36,61 @@ class DashboardController extends Controller
                 $totalDue += $customer->due;
             }
             
+            // Calculate total collection (only received amounts)
+            $totalCollection = $totalReceivedAmount;
+            
             // Keep today's values for other calculations
             $todaySale = SalesOrder::whereDate('date', date('Y-m-d'))->sum('total');
             $todayYourChoiceSale = SalesOrder::whereDate('date', date('Y-m-d'))->where('company_branch_id', 1)->sum('total');
             $todayYourChoicePlusSale = SalesOrder::whereDate('date', date('Y-m-d'))->where('company_branch_id', 2)->sum('total');
+            
+            // Calculate today's total invoice amount (sales orders + manual due amounts for today)
+            $todaySalesOrderTotal = SalesOrder::whereDate('date', date('Y-m-d'))->sum('total');
+            $todayManualDueTotal = SalePayment::whereDate('date', date('Y-m-d'))
+                ->whereNotNull('total_sales_amount')
+                ->where('total_sales_amount', '>', 0)
+                ->distinct('total_sales_amount')
+                ->sum('total_sales_amount');
+            $todayTotalInvoiceAmount = $todaySalesOrderTotal + $todayManualDueTotal;
             $todayDue = SalesOrder::whereDate('date', date('Y-m-d'))->sum('due');
             $todayYourChoiceDue = SalesOrder::whereDate('date', date('Y-m-d'))->where('company_branch_id', 1)->sum('due');
             $todayYourChoicePlusDue = SalesOrder::whereDate('date', date('Y-m-d'))->where('company_branch_id', 2)->sum('due');
             
-            // Calculate Today's Total Collection as sum of total due and total receive amount
+            // Calculate Today's Total Collection (due amounts + received amounts)
             $todayTotalDue = $todayDue;
             $todayTotalReceive = SalePayment::whereDate('date', date('Y-m-d'))
                 ->where('type', 1)
                 ->whereNotIn('transaction_method', [4, 5])
                 ->sum('amount');
-            $todaySale = $todayTotalDue + $todayTotalReceive;
+            $todaySale = $todayTotalDue + $todayTotalReceive; // Total collection including both due and received amounts
+            // Today's Total Due Collection = Only due payments received today
             $todayDueCollection = SalePayment::whereDate('date', date('Y-m-d'))
                 ->where('type', 1)
                 ->where('received_type', 2)
                 ->whereNotIn('transaction_method', [2])
                 ->whereNotIn('transaction_method', [4,5])
-                ->sum('amount');
+                ->sum('amount'); // Due payments received today
+            
+            // Today's Total Invoice Receive Amount (from manual cheque-in)
+            $todayTotalInvoiceReceiveAmount = SalePayment::whereDate('date', date('Y-m-d'))
+                ->where('type', 1)
+                ->whereIn('status', [1, 2])
+                ->sum('receive_amount'); // Sum of receive_amount from manual cheque-in entries
+            // Your Choice Branch (ID: 1) - Today's Total Due Collection
             $todayChoiceDueCollection = SalePayment::whereDate('date', date('Y-m-d'))
                 ->where('company_branch_id', 1)
                 ->where('type', 1)
                 ->whereNotIn('transaction_method', [2])
-                ->where('received_type', 2)->sum('amount');
+                ->where('received_type', 2)
+                ->sum('amount');
+            
+            // Your Choice Plus Branch (ID: 2) - Today's Total Due Collection
             $todayChoicePlusDueCollection = SalePayment::whereDate('date', date('Y-m-d'))
                 ->where('company_branch_id', 2)
                 ->where('type', 1)
                 ->whereNotIn('transaction_method', [2])
-                ->where('received_type', 2)->sum('amount');
+                ->where('received_type', 2)
+                ->sum('amount');
             $todayCashSale = SalePayment::whereDate('date', date('Y-m-d'))
                 ->where('type', 1)
                 ->where('received_type', 1)->sum('amount');
@@ -234,19 +258,42 @@ class DashboardController extends Controller
                 // Add opening due amount for this customer
                 $payment->opening_due_amount = $payment->customer->opening_due ?? 0;
                 
-                // Only include payments that still have a due amount > 0
-                if ($payment->due_amount > 0) {
-                    $filteredTodayPayments->push($payment);
-                }
-            }
+            // Include all today's payments (not just those with due amounts)
+            $filteredTodayPayments->push($payment);
+        }
 
-            $data = [
+        // Get customers with due payments for today
+        $allCustomers = Customer::where('status', 1)
+            ->with(['branch'])
+            ->get();
+        
+        // Filter customers who have due amounts > 0
+        $customersWithDue = $allCustomers->filter(function($customer) {
+            return $customer->due > 0;
+        })->sortByDesc('due');
+
+        // Get today's due payments (payments that are due to be collected today)
+        $todaysDuePayments = SalePayment::where('due_amount', '>', 0)
+            ->where(function($query) {
+                $query->whereDate('next_payment_date', date('Y-m-d'))
+                      ->orWhereDate('next_approximate_payment_date', date('Y-m-d'))
+                      ->orWhereDate('second_next_payment_date', date('Y-m-d'));
+            })
+            ->with(['customer', 'salesPerson'])
+            ->orderBy('next_payment_date', 'asc')
+            ->orderBy('next_approximate_payment_date', 'asc')
+            ->orderBy('second_next_payment_date', 'asc')
+            ->get();
+
+        $data = [
                 // New total values
                 'totalInvoiceAmount' => $totalInvoiceAmount,
                 'totalReceivedAmount' => $totalReceivedAmount,
                 'totalDue' => $totalDue,
+                'totalCollection' => $totalCollection,
                 
                 // Keep today's values for other calculations
+                'todayTotalInvoiceAmount' => $todayTotalInvoiceAmount,
                 'todaySale' => $todaySale,
                 'todayYourChoiceSale' => $todayYourChoiceSale,
                 'todayYourChoicePlusSale' => $todayYourChoicePlusSale,
@@ -254,6 +301,7 @@ class DashboardController extends Controller
                 'todayYourChoiceDue' => $todayYourChoiceDue,
                 'todayYourChoicePlusDue' => $todayYourChoicePlusDue,
                 'todayDueCollection' => $todayDueCollection,
+                'todayTotalInvoiceReceiveAmount' => $todayTotalInvoiceReceiveAmount,
                 'todayChoiceDueCollection' => $todayChoiceDueCollection,
                 'todayChoicePlusDueCollection' => $todayChoicePlusDueCollection,
                 'todayExpense' => $todayExpense,
@@ -271,7 +319,9 @@ class DashboardController extends Controller
                 'recentlyProducts' => $recentlyProducts,
                 'pendingCheques' => $filteredPendingCheques,
                 'nextDayPayments' => $filteredNextDayPayments,
-                'todayPayments' => $filteredTodayPayments
+                'todayPayments' => $filteredTodayPayments,
+                'customersWithDue' => $customersWithDue,
+                'todaysDuePayments' => $todaysDuePayments
             ];
         }else{
             //dd('kj');
@@ -285,7 +335,7 @@ class DashboardController extends Controller
                 ->sum('total_sales_amount');
             $totalInvoiceAmount = $salesOrderTotal + $manualDueTotal;
             
-            $totalReceivedAmount = SalePayment::where('company_branch_id', Auth::user()->company_branch_id)->where('type', 1)->sum('amount');
+            $totalReceivedAmount = SalePayment::where('company_branch_id', Auth::user()->company_branch_id)->where('type', 1)->whereIn('status', [1, 2])->sum('amount');
             
             // Calculate total due amount by summing all customer due amounts for this branch
             $customers = Customer::where('status', 1)->where('company_branch_id', Auth::user()->company_branch_id)->get();
@@ -294,24 +344,45 @@ class DashboardController extends Controller
                 $totalDue += $customer->due;
             }
             
+            // Calculate total collection (only received amounts) for branch
+            $totalCollection = $totalReceivedAmount;
+            
             // Keep today's values for other calculations
             $todaySale = SalesOrder::where('company_branch_id', Auth::user()->company_branch_id)->whereDate('date', date('Y-m-d'))->sum('total');
             $todayDue = SalesOrder::where('company_branch_id', Auth::user()->company_branch_id)->whereDate('date', date('Y-m-d'))->sum('due');
             
-            // Calculate Today's Total Collection as sum of total due and total receive amount for branch
+            // Calculate today's total invoice amount for branch (sales orders + manual due amounts for today)
+            $todaySalesOrderTotal = SalesOrder::where('company_branch_id', Auth::user()->company_branch_id)->whereDate('date', date('Y-m-d'))->sum('total');
+            $todayManualDueTotal = SalePayment::where('company_branch_id', Auth::user()->company_branch_id)
+                ->whereDate('date', date('Y-m-d'))
+                ->whereNotNull('total_sales_amount')
+                ->where('total_sales_amount', '>', 0)
+                ->distinct('total_sales_amount')
+                ->sum('total_sales_amount');
+            $todayTotalInvoiceAmount = $todaySalesOrderTotal + $todayManualDueTotal;
+            
+            // Calculate Today's Total Collection (due amounts + received amounts) for branch
             $todayTotalDue = $todayDue;
             $todayTotalReceive = SalePayment::whereDate('date', date('Y-m-d'))
                 ->where('company_branch_id', Auth::user()->company_branch_id)
                 ->where('type', 1)
                 ->whereNotIn('transaction_method', [4, 5])
                 ->sum('amount');
-            $todaySale = $todayTotalDue + $todayTotalReceive;
+            $todaySale = $todayTotalDue + $todayTotalReceive; // Total collection including both due and received amounts
+            // Today's Total Due Collection = Only due payments received today (for branch)
             $todayDueCollection = SalePayment::whereDate('date', date('Y-m-d'))
                 ->where('company_branch_id', Auth::user()->company_branch_id)
                 ->where('type', 1)
                 ->where('received_type', 2)
                 ->whereNotIn('transaction_method', [2])
-                ->sum('amount');
+                ->sum('amount'); // Due payments received today for this branch
+            
+            // Today's Total Invoice Receive Amount (from manual cheque-in) for branch
+            $todayTotalInvoiceReceiveAmount = SalePayment::whereDate('date', date('Y-m-d'))
+                ->where('company_branch_id', Auth::user()->company_branch_id)
+                ->where('type', 1)
+                ->whereIn('status', [1, 2])
+                ->sum('receive_amount'); // Sum of receive_amount from manual cheque-in entries
             $todayCashSale = SalePayment::where('company_branch_id', Auth::user()->company_branch_id)->whereDate('date', date('Y-m-d'))
                 ->where('type', 1)
                 ->where('received_type', 1)->sum('amount');
@@ -421,11 +492,14 @@ class DashboardController extends Controller
                 'totalInvoiceAmount' => $totalInvoiceAmount,
                 'totalReceivedAmount' => $totalReceivedAmount,
                 'totalDue' => $totalDue,
+                'totalCollection' => $totalCollection,
                 
                 // Keep today's values for other calculations
+                'todayTotalInvoiceAmount' => $todayTotalInvoiceAmount,
                 'todaySale' => $todaySale,
                 'todayDue' => $todayDue,
                 'todayDueCollection' => $todayDueCollection,
+                'todayTotalInvoiceReceiveAmount' => $todayTotalInvoiceReceiveAmount,
                 'todayExpense' => $todayExpense,
                 'todayCashSale' => $todayCashSale,
                 'todaySaleReceipt' => $todaySaleReceipt,
@@ -491,15 +565,40 @@ class DashboardController extends Controller
                 // Add opening due amount for this customer
                 $payment->opening_due_amount = $payment->customer->opening_due ?? 0;
                 
-                // Only include payments that still have a due amount > 0
-                if ($payment->due_amount > 0) {
-                    $filteredTodayPayments->push($payment);
-                }
-            }
+            // Include all today's payments (not just those with due amounts)
+            $filteredTodayPayments->push($payment);
+        }
 
-            // Add payment lists to data array for branch users
-            $data['nextDayPayments'] = $filteredNextDayPayments;
-            $data['todayPayments'] = $filteredTodayPayments;
+        // Get customers with due payments for branch users
+        $allCustomers = Customer::where('status', 1)
+            ->where('company_branch_id', Auth::user()->company_branch_id)
+            ->with(['branch'])
+            ->get();
+        
+        // Filter customers who have due amounts > 0
+        $customersWithDue = $allCustomers->filter(function($customer) {
+            return $customer->due > 0;
+        })->sortByDesc('due');
+
+        // Get today's due payments (payments that are due to be collected today) for branch users
+        $todaysDuePayments = SalePayment::where('due_amount', '>', 0)
+            ->where('company_branch_id', Auth::user()->company_branch_id)
+            ->where(function($query) {
+                $query->whereDate('next_payment_date', date('Y-m-d'))
+                      ->orWhereDate('next_approximate_payment_date', date('Y-m-d'))
+                      ->orWhereDate('second_next_payment_date', date('Y-m-d'));
+            })
+            ->with(['customer', 'salesPerson'])
+            ->orderBy('next_payment_date', 'asc')
+            ->orderBy('next_approximate_payment_date', 'asc')
+            ->orderBy('second_next_payment_date', 'asc')
+            ->get();
+
+        // Add payment lists to data array for branch users
+        $data['nextDayPayments'] = $filteredNextDayPayments;
+        $data['todayPayments'] = $filteredTodayPayments;
+        $data['customersWithDue'] = $customersWithDue;
+        $data['todaysDuePayments'] = $todaysDuePayments;
         }
 
         return view('dashboard', $data);

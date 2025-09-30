@@ -653,36 +653,46 @@ class ReportController extends Controller
 
     public function clientStatement(Request $request) {
 
-        if (Auth::user()->company_branch_id == 0) {
-            if ($request->customer == null) {
-                $report_type = $request->report_type??1;
-                $customers = Customer::orderBy('id','asc')
-                    ->where('status',1)
-                    ->get();
-            }else{
-                $report_type = $request->report_type??1;
-                $customers = Customer::where('id',$request->customer)
-                    ->where('status',1)
-                    ->get();
-            }
-        }else{
-            if ($request->customer == null) {
-                $report_type = $request->report_type??1;
-                $customers = Customer::orderBy('id','asc')
-                    ->where('status',1)
-                    ->where('company_branch_id',Auth::user()->company_branch_id)
-                    ->get();
-            }else{
-                $report_type = $request->report_type??1;
-                $customers = Customer::where('id',$request->customer)
-                    ->where('status',1)
-                    ->where('company_branch_id',Auth::user()->company_branch_id)
-                    ->get();
-            }
+        $report_type = $request->report_type??1;
+        $selected_customer = $request->customer;
+        $customer_invoices = null;
+        $selected_customer_data = null;
 
+        // Always get all customers for the summary view
+        if (Auth::user()->company_branch_id == 0) {
+            $customers = Customer::orderBy('id','asc')
+                ->where('status',1)
+                ->get();
+        } else {
+            $customers = Customer::orderBy('id','asc')
+                ->where('status',1)
+                ->where('company_branch_id',Auth::user()->company_branch_id)
+                ->get();
         }
 
-        return view('report.client_statement',compact('customers', 'report_type'));
+        // If a specific customer is selected, get their individual details
+        if ($request->customer != null) {
+            $selected_customer_data = Customer::find($request->customer);
+            
+            // Try multiple approaches to get customer transaction data
+            $customer_invoices = \App\Model\SalePayment::where('customer_id', $request->customer)
+                ->whereNotNull('total_sales_amount')
+                ->where('total_sales_amount', '>', 0)
+                ->orderBy('date', 'desc')
+                ->get();
+            
+            // If no data found with total_sales_amount, try getting all payments for this customer
+            if ($customer_invoices->count() == 0) {
+                $customer_invoices = \App\Model\SalePayment::where('customer_id', $request->customer)
+                    ->orderBy('date', 'desc')
+                    ->get();
+            }
+            
+            // Debug: Log what we found
+            \Log::info("Customer ID: {$request->customer}, Found {$customer_invoices->count()} payment records");
+        }
+
+        return view('report.client_statement',compact('customers', 'report_type', 'selected_customer', 'customer_invoices', 'selected_customer_data'));
     }
 
 
@@ -1317,37 +1327,166 @@ class ReportController extends Controller
         
         $employeeId = $request->employee_id;
         $customerId = $request->customer_id;
-        $year = $request->year ?? date('Y');
+        $fromDate = $request->from_date;
+        $toDate = $request->to_date;
+        $sortByAmount = $request->sort_by_amount;
+        $sortByDate = $request->sort_by_date;
         
-        // Get employee targets
-        $query = \App\Model\EmployeeTarget::with(['employee'])
-            ->where('year', $year);
-            
+        // Get customers for each employee
+        $query = \App\Model\Customer::with(['employee']);
+        
         if ($employeeId) {
             $query->where('employee_id', $employeeId);
         }
         
-        $targets = $query->orderBy('employee_id')->orderBy('from_date')->get();
-        
-        // Get customers for each employee
-        $employeeCustomers = [];
-        foreach ($targets as $target) {
-            $employeeId = $target->employee_id;
-            if (!isset($employeeCustomers[$employeeId])) {
-                $employeeCustomers[$employeeId] = \App\Model\Customer::where('employee_id', $employeeId)
-                    ->orderBy('name')
-                    ->get();
-            }
-        }
-        
-        // Filter customers if specific customer is selected
         if ($customerId) {
-            foreach ($employeeCustomers as $empId => $customers) {
-                $employeeCustomers[$empId] = $customers->where('id', $customerId);
+            $query->where('id', $customerId);
+        }
+        
+        $customers = $query->orderBy('employee_id')->orderBy('name')->get();
+        
+        // Group customers by employee and create targets collection
+        $targets = collect();
+        foreach ($customers as $customer) {
+            if ($customer->employee) {
+                $target = new \stdClass();
+                $target->employee = $customer->employee;
+                $target->customer = $customer;
+                $target->due_amount = $customer->due ?? 0; // Store due amount for sorting
+                
+                // Get the last payment date for this customer for date sorting
+                $lastPayment = \App\Model\SalePayment::where('customer_id', $customer->id)
+                    ->whereIn('status', [1, 2]) // Both pending and approved payments
+                    ->orderBy('date', 'desc')
+                    ->first();
+                
+                // Use last payment date if available, otherwise use customer creation date
+                $target->sort_date = $lastPayment ? $lastPayment->date : $customer->created_at;
+                
+                $targets->push($target);
             }
         }
         
-        return view('report.employee_target_customer_wise', compact('employees', 'customers', 'targets', 'employeeCustomers', 'employeeId', 'customerId', 'year'));
+        // Apply sorting based on due amount
+        if ($sortByAmount) {
+            if ($sortByAmount == 'high_to_low') {
+                $targets = $targets->sortByDesc('due_amount');
+            } elseif ($sortByAmount == 'low_to_high') {
+                $targets = $targets->sortBy('due_amount');
+            }
+        }
+        
+        // Apply sorting based on date
+        if ($sortByDate) {
+            if ($sortByDate == 'newest') {
+                $targets = $targets->sortByDesc('sort_date');
+            } elseif ($sortByDate == 'oldest') {
+                $targets = $targets->sortBy('sort_date');
+            }
+        }
+        
+        return view('report.employee_target_customer_wise', compact('employees', 'customers', 'targets', 'employeeId', 'customerId', 'fromDate', 'toDate', 'sortByAmount', 'sortByDate'));
+    }
+
+    public function srWiseCollection(Request $request) {
+        $employees = \App\Model\Employee::orderBy('name')->get();
+        $customers = \App\Model\Customer::where('status', 1)->orderBy('name')->get();
+        
+        $employeeId = $request->employee_id;
+        $fromDate = $request->from_date;
+        $toDate = $request->to_date;
+        
+        // Default to current month if no date range provided
+        if (!$fromDate && !$toDate) {
+            $fromDate = date('Y-m-01'); // First day of current month
+            $toDate = date('Y-m-t'); // Last day of current month
+        }
+        
+        // Get employee targets for the selected period
+        $targetsQuery = \App\Model\EmployeeTarget::with('employee');
+        
+        if ($employeeId) {
+            $targetsQuery->where('employee_id', $employeeId);
+        }
+        
+        if ($fromDate && $toDate) {
+            $targetsQuery->where(function($query) use ($fromDate, $toDate) {
+                $query->whereBetween('from_date', [$fromDate, $toDate])
+                      ->orWhereBetween('to_date', [$fromDate, $toDate])
+                      ->orWhere(function($q) use ($fromDate, $toDate) {
+                          $q->where('from_date', '<=', $fromDate)
+                            ->where('to_date', '>=', $toDate);
+                      });
+            });
+        }
+        
+        $employeeTargets = $targetsQuery->get();
+        
+        // Calculate collection data for each employee
+        $collectionData = collect();
+        $totalTargetAmount = 0;
+        $totalCollectionAmount = 0;
+        
+        foreach ($employeeTargets as $target) {
+            $employee = $target->employee;
+            if (!$employee) continue;
+            
+            // Get customers assigned to this employee
+            $employeeCustomers = \App\Model\Customer::where('employee_id', $employee->id)
+                ->where('status', 1)
+                ->get();
+            
+            // Calculate total collection for this employee in the date range
+            $totalCollection = 0;
+            $collectionDetails = collect();
+            
+            foreach ($employeeCustomers as $customer) {
+                // Get payments received for this customer in the date range
+                $payments = \App\Model\SalePayment::where('customer_id', $customer->id)
+                    ->where('type', 1) // Received payments
+                    ->whereIn('status', [1, 2]) // Pending and approved
+                    ->whereBetween('date', [$fromDate, $toDate])
+                    ->get();
+                
+                $customerCollection = $payments->sum('amount');
+                $totalCollection += $customerCollection;
+                
+                if ($customerCollection > 0) {
+                    $collectionDetails->push([
+                        'customer' => $customer,
+                        'amount' => $customerCollection,
+                        'payments' => $payments
+                    ]);
+                }
+            }
+            
+            $targetAmount = $target->amount ?? 0;
+            $totalTargetAmount += $targetAmount;
+            $totalCollectionAmount += $totalCollection;
+            
+            $collectionData->push([
+                'employee' => $employee,
+                'target' => $target,
+                'target_amount' => $targetAmount,
+                'collection_amount' => $totalCollection,
+                'achievement_percentage' => $targetAmount > 0 ? ($totalCollection / $targetAmount) * 100 : 0,
+                'collection_details' => $collectionDetails
+            ]);
+        }
+        
+        // Sort by collection amount (highest first)
+        $collectionData = $collectionData->sortByDesc('collection_amount');
+        
+        return view('report.sr_wise_collection', compact(
+            'employees', 
+            'customers', 
+            'collectionData', 
+            'employeeId', 
+            'fromDate', 
+            'toDate',
+            'totalTargetAmount',
+            'totalCollectionAmount'
+        ));
     }
 
 }

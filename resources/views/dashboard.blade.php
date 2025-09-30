@@ -54,16 +54,13 @@
             <!-- /.info-box -->
         </div>
 
-
-        
-        <!-- /.col -->
         <div class="col-md-4 col-sm-6 col-xs-12">
             <div class="info-box">
-                <span class="info-box-icon bg-red"><i class="fa fa-dollar"></i></span>
+                <span class="info-box-icon bg-green"><i class="fa fa-spinner"></i></span>
 
                 <div class="info-box-content">
-                    <span class="info-box-text">Received Amount</span>
-                    <span class="info-box-number">৳{{ number_format($totalReceivedAmount * nbrCalculation(), 2) }}</span>
+                    <span class="info-box-text">Total Due</span>
+                    <span class="info-box-number">৳{{ number_format($totalDue * nbrCalculation(), 2) }}</span>
                 </div>
                 <!-- /.info-box-content -->
             </div>
@@ -73,11 +70,39 @@
 
         <div class="col-md-4 col-sm-6 col-xs-12">
             <div class="info-box">
-                <span class="info-box-icon bg-green"><i class="fa fa-spinner"></i></span>
+                <span class="info-box-icon bg-teal"><i class="fa fa-money"></i></span>
 
                 <div class="info-box-content">
-                    <span class="info-box-text">Total Due</span>
-                    <span class="info-box-number">৳{{ number_format($totalDue * nbrCalculation(), 2) }}</span>
+                    <span class="info-box-text">Total Collection</span>
+                    <span class="info-box-number">৳{{ number_format($totalCollection * nbrCalculation(), 2) }}</span>
+                </div>
+                <!-- /.info-box-content -->
+            </div>
+            <!-- /.info-box -->
+        </div>
+        <!-- /.col -->
+
+        <div class="col-md-4 col-sm-6 col-xs-12">
+            <div class="info-box">
+                <span class="info-box-icon bg-blue"><i class="fa fa-file-text-o"></i></span>
+
+                <div class="info-box-content">
+                    <span class="info-box-text">Today's Total Invoice Amount</span>
+                    <span class="info-box-number">৳{{ number_format($todayTotalInvoiceAmount * nbrCalculation(), 2) }}</span>
+                </div>
+                <!-- /.info-box-content -->
+            </div>
+            <!-- /.info-box -->
+        </div>
+        <!-- /.col -->
+
+        <div class="col-md-4 col-sm-6 col-xs-12">
+            <div class="info-box">
+                <span class="info-box-icon bg-purple"><i class="fa fa-credit-card"></i></span>
+
+                <div class="info-box-content">
+                    <span class="info-box-text">Today's Total Invoice Receive Amount</span>
+                    <span class="info-box-number">৳{{ number_format($todayTotalInvoiceReceiveAmount * nbrCalculation(), 2) }}</span>
                 </div>
                 <!-- /.info-box-content -->
             </div>
@@ -107,7 +132,6 @@
                 <div class="info-box-content">
                     <span class="info-box-text">Today's Total Collection</span>
                     <span class="info-box-number">৳{{ number_format($todaySale * nbrCalculation(), 2) }}</span>
-                    <small class="text-muted">Due + Received</small>
                 </div>
                 <!-- /.info-box-content -->
             </div>
@@ -322,8 +346,6 @@
                                 <th>Date</th>
                                 <th>Invoice No</th>
                                 <th>Customer</th>
-                                <th>Payment Method</th>
-                                <th>Opening Due</th>
                                 <th>Total Amount</th>
                                 <th>Receive Amount</th>
                                 <th>Due Amount</th>
@@ -337,22 +359,6 @@
                                     <td>{{ $payment->date->format('d-m-Y') }}</td>
                                     <td>{{ $payment->invoice_no ?? 'N/A' }}</td>
                                     <td>{{ $payment->customer->name ?? 'N/A' }}</td>
-                                    <td>
-                                        @if($payment->transaction_method == 1)
-                                            Cash
-                                        @elseif($payment->transaction_method == 2)
-                                            Bank
-                                        @elseif($payment->transaction_method == 3)
-                                            Mobile Banking
-                                        @elseif($payment->transaction_method == 4)
-                                            Sale Adjustment Discount
-                                        @elseif($payment->transaction_method == 5)
-                                            Return Adjustment Amount
-                                        @else
-                                            {{ $payment->payment_method ?? 'Cash' }}
-                                        @endif
-                                    </td>
-                                    <td>৳{{ number_format($payment->opening_due_amount ?? 0, 2) }}</td>
                                     <td>৳{{ number_format($payment->total_sales_amount ?? $payment->amount, 2) }}</td>
                                     <td>৳{{ number_format($payment->receive_amount ?? $payment->amount, 2) }}</td>
                                     <td>৳{{ number_format($payment->due_amount ?? 0, 2) }}</td>
@@ -400,8 +406,6 @@
                                 <th>Invoice No</th>
                                 <th>Customer</th>
                                 <th>Sales Person</th>
-                                <th>Payment Method</th>
-                                <th>Opening Due</th>
                                 <th>Total Amount</th>
                                 <th>Receive Amount</th>
                                 <th>Due Amount</th>
@@ -416,22 +420,6 @@
                                     <td>{{ $payment->invoice_no ?? 'N/A' }}</td>
                                     <td>{{ $payment->customer->name ?? 'N/A' }}</td>
                                     <td>{{ $payment->salesPerson->name ?? 'N/A' }}</td>
-                                    <td>
-                                        @if($payment->transaction_method == 1)
-                                            Cash
-                                        @elseif($payment->transaction_method == 2)
-                                            Bank
-                                        @elseif($payment->transaction_method == 3)
-                                            Mobile Banking
-                                        @elseif($payment->transaction_method == 4)
-                                            Sale Adjustment Discount
-                                        @elseif($payment->transaction_method == 5)
-                                            Return Adjustment Amount
-                                        @else
-                                            {{ $payment->payment_method ?? 'Cash' }}
-                                        @endif
-                                    </td>
-                                    <td>৳{{ number_format($payment->opening_due_amount ?? 0, 2) }}</td>
                                     <td>৳{{ number_format($payment->total_sales_amount ?? $payment->amount, 2) }}</td>
                                     <td>৳{{ number_format($payment->receive_amount ?? $payment->amount, 2) }}</td>
                                     <td>৳{{ number_format($payment->due_amount ?? 0, 2) }}</td>
@@ -448,6 +436,68 @@
                                     <td>{{ $payment->note ?? 'N/A' }}</td>
                                 </tr>
                             @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Due Payment List -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="box box-warning">
+                <div class="box-header with-border">
+                    <h3 class="box-title">Today's Due Payment List (Scheduled for Collection)</h3>
+                    <div class="box-tools pull-right">
+                        <button type="button" class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i>
+                        </button>
+                        <button type="button" class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
+                    </div>
+                </div>
+                <!-- /.box-header -->
+                <div class="box-body">
+                    <div class="table-responsive">
+                        <table id="todays-due-payments-table" class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Due Date</th>
+                                    <th>Invoice No</th>
+                                    <th>Customer</th>
+                                    <th>Sales Person</th>
+                                    <th>Total Amount</th>
+                                    <th>Receive Amount</th>
+                                    <th>Due Amount</th>
+                                    <th>Note</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($todaysDuePayments as $payment)
+                                    @php
+                                        // Determine which due date to show
+                                        $dueDate = null;
+                                        $today = date('Y-m-d');
+                                        
+                                        if ($payment->next_payment_date && $payment->next_payment_date == $today) {
+                                            $dueDate = $payment->next_payment_date;
+                                        } elseif ($payment->next_approximate_payment_date && $payment->next_approximate_payment_date == $today) {
+                                            $dueDate = $payment->next_approximate_payment_date;
+                                        } elseif ($payment->second_next_payment_date && $payment->second_next_payment_date == $today) {
+                                            $dueDate = $payment->second_next_payment_date;
+                                        }
+                                    @endphp
+                                    <tr>
+                                        <td>{{ $dueDate ? \Carbon\Carbon::parse($dueDate)->format('d-m-Y') : 'N/A' }}</td>
+                                        <td>{{ $payment->invoice_no ?? 'N/A' }}</td>
+                                        <td>{{ $payment->customer->name ?? 'N/A' }}</td>
+                                        <td>{{ $payment->salesPerson->name ?? 'N/A' }}</td>
+                                        <td>৳{{ number_format($payment->total_sales_amount ?? $payment->amount, 2) }}</td>
+                                        <td>৳{{ number_format($payment->receive_amount ?? $payment->amount, 2) }}</td>
+                                        <td>৳{{ number_format($payment->due_amount ?? 0, 2) }}</td>
+                                        <td>{{ $payment->note ?? 'N/A' }}</td>
+                                    </tr>
+                                @endforeach
                             </tbody>
                         </table>
                     </div>
@@ -478,8 +528,6 @@
                                 <th>Invoice No</th>
                                 <th>Customer</th>
                                 <th>Sales Person</th>
-                                <th>Payment Method</th>
-                                <th>Opening Due</th>
                                 <th>Total Amount</th>
                                 <th>Receive Amount</th>
                                 <th>Due Amount</th>
@@ -493,22 +541,6 @@
                                     <td>{{ $payment->invoice_no ?? 'N/A' }}</td>
                                     <td>{{ $payment->customer->name ?? 'N/A' }}</td>
                                     <td>{{ $payment->salesPerson->name ?? 'N/A' }}</td>
-                                    <td>
-                                        @if($payment->transaction_method == 1)
-                                            Cash
-                                        @elseif($payment->transaction_method == 2)
-                                            Bank
-                                        @elseif($payment->transaction_method == 3)
-                                            Mobile Banking
-                                        @elseif($payment->transaction_method == 4)
-                                            Sale Adjustment Discount
-                                        @elseif($payment->transaction_method == 5)
-                                            Return Adjustment Amount
-                                        @else
-                                            {{ $payment->payment_method ?? 'Cash' }}
-                                        @endif
-                                    </td>
-                                    <td>৳{{ number_format($payment->opening_due_amount ?? 0, 2) }}</td>
                                     <td>৳{{ number_format($payment->total_sales_amount ?? $payment->amount, 2) }}</td>
                                     <td>৳{{ number_format($payment->receive_amount ?? $payment->amount, 2) }}</td>
                                     <td>৳{{ number_format($payment->due_amount ?? 0, 2) }}</td>
@@ -857,6 +889,18 @@
             });
 
             $('#today-payments-table').DataTable({
+                ordering: false,
+                pageLength: 10,
+                responsive: true
+            });
+
+            $('#customers-due-table').DataTable({
+                ordering: false,
+                pageLength: 10,
+                responsive: true
+            });
+
+            $('#todays-due-payments-table').DataTable({
                 ordering: false,
                 pageLength: 10,
                 responsive: true

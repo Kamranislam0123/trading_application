@@ -23,7 +23,7 @@
 
                     <div class="box-body">
                         <div class="form-group {{ $errors->has('name') ? 'has-error' :'' }}">
-                            <label class="col-sm-2 control-label">Name *</label>
+                            <label class="col-sm-2 control-label">Name</label>
 
                             <div class="col-sm-10">
                                 <input type="text" class="form-control" placeholder="Enter Name"
@@ -36,7 +36,7 @@
                         </div>
 
                         <div class="form-group {{ $errors->has('employee_id') ? 'has-error' :'' }}">
-                            <label class="col-sm-2 control-label">Sales Person ID *</label>
+                            <label class="col-sm-2 control-label">Sales Person ID</label>
 
                             <div class="col-sm-10">
                                 <input type="text" class="form-control" placeholder="Enter Employee ID"
@@ -48,18 +48,6 @@
                             </div>
                         </div>
 
-                        <div class="form-group {{ $errors->has('email') ? 'has-error' :'' }}">
-                            <label class="col-sm-2 control-label">Email *</label>
-
-                            <div class="col-sm-10">
-                                <input type="text" class="form-control" placeholder="Enter Email"
-                                       name="email" value="{{ old('email', $employee->email) }}" required>
-
-                                @error('email')
-                                <span class="help-block">{{ $message }}</span>
-                                @enderror
-                            </div>
-                        </div>
 
                         <!-- <div class="form-group {{ $errors->has('password') ? 'has-error' :'' }}">
                             <label class="col-sm-2 control-label">Password </label>
@@ -178,10 +166,10 @@
                         </div>
 
                         <div class="form-group {{ $errors->has('employee_type') ? 'has-error' :'' }}">
-                            <label class="col-sm-2 control-label">Sales Person Type *</label>
+                            <label class="col-sm-2 control-label">Sales Person Type</label>
 
                             <div class="col-sm-10">
-                                <select class="form-control" name="employee_type" >
+                                <select class="form-control" name="employee_type">
                                     <option value="">Select Employee Type</option>
                                     <option value="1" {{ empty(old('employee_type')) ? ($errors->has('employee_type') ? '' : ($employee->employee_type == '1' ? 'selected' : '')) :
                                             (old('employee_type') == '1' ? 'selected' : '') }}>Permanent</option>
@@ -209,10 +197,10 @@
                         </div>
 
                         <div class="form-group {{ $errors->has('gender') ? 'has-error' :'' }}">
-                            <label class="col-sm-2 control-label">Gender *</label>
+                            <label class="col-sm-2 control-label">Gender</label>
 
                             <div class="col-sm-10">
-                                <select class="form-control" name="gender" >
+                                <select class="form-control" name="gender">
                                     <option value="">Select Gender</option>
                                     <option value="1" {{ empty(old('gender')) ? ($errors->has('gender') ? '' : ($employee->gender == '1' ? 'selected' : '')) :
                                             (old('gender') == '1' ? 'selected' : '') }}>Male</option>
@@ -227,10 +215,10 @@
                         </div>
 
                         <div class="form-group {{ $errors->has('marital_status') ? 'has-error' :'' }}">
-                            <label class="col-sm-2 control-label">Marital Status *</label>
+                            <label class="col-sm-2 control-label">Marital Status</label>
 
                             <div class="col-sm-10">
-                                <select class="form-control" name="marital_status" >
+                                <select class="form-control" name="marital_status">
                                     <option value="">Select Marital Status</option>
                                     <option value="1" {{ empty(old('marital_status')) ? ($errors->has('marital_status') ? '' : ($employee->marital_status == '1' ? 'selected' : '')) :
                                             (old('marital_status') == '1' ? 'selected' : '') }}>Single</option>
@@ -248,8 +236,8 @@
                             <label class="col-sm-2 control-label">Mobile No. </label>
 
                             <div class="col-sm-10">
-                                <input type="text" class="form-control" placeholder="Enter Mobile No."
-                                       name="mobile_no" value="{{ empty(old('mobile_no')) ? ($errors->has('mobile_no') ? '' : $employee->mobile_no) : old('mobile_no') }}">
+                                <input type="text" class="form-control" placeholder="Enter Mobile No. (11 digits)"
+                                       name="mobile_no" value="{{ empty(old('mobile_no')) ? ($errors->has('mobile_no') ? '' : $employee->mobile_no) : old('mobile_no') }}" pattern="[0-9]{11}" maxlength="11">
 
                                 @error('mobile_no')
                                 <span class="help-block">{{ $message }}</span>
@@ -284,7 +272,7 @@
                         </div>
 
                         <div class="form-group {{ $errors->has('emergency_contact') ? 'has-error' :'' }}">
-                            <label class="col-sm-2 control-label">Emergency Contact *</label>
+                            <label class="col-sm-2 control-label">Emergency Contact</label>
 
                             <div class="col-sm-10">
                                 <input type="text" class="form-control" placeholder="Enter Emergency Contact"
@@ -321,11 +309,11 @@
                         </div>
 
                         <div class="form-group {{ $errors->has('present_address') ? 'has-error' :'' }}">
-                            <label class="col-sm-2 control-label">Present Address *</label>
+                            <label class="col-sm-2 control-label">Present Address</label>
 
                             <div class="col-sm-10">
-                                <input type="text" class="form-control" placeholder="Enter Present Address"
-                                       name="present_address" value="{{ empty(old('present_address')) ? ($errors->has('present_address') ? '' : $employee->present_address) : old('present_address') }}">
+                                <textarea class="form-control" placeholder="Enter Present Address"
+                                       name="present_address" rows="3">{{ empty(old('present_address')) ? ($errors->has('present_address') ? '' : $employee->present_address) : old('present_address') }}</textarea>
 
                                 @error('present_address')
                                 <span class="help-block">{{ $message }}</span>
@@ -334,11 +322,11 @@
                         </div>
 
                         <div class="form-group {{ $errors->has('permanent_address') ? 'has-error' :'' }}">
-                            <label class="col-sm-2 control-label">Permanent Address *</label>
+                            <label class="col-sm-2 control-label">Permanent Address</label>
 
                             <div class="col-sm-10">
-                                <input type="text" class="form-control" placeholder="Enter Permanent Address"
-                                       name="permanent_address" value="{{ empty(old('permanent_address')) ? ($errors->has('permanent_address') ? '' : $employee->permanent_address) : old('permanent_address') }}">
+                                <textarea class="form-control" placeholder="Enter Permanent Address"
+                                       name="permanent_address" rows="3">{{ empty(old('permanent_address')) ? ($errors->has('permanent_address') ? '' : $employee->permanent_address) : old('permanent_address') }}</textarea>
 
                                 @error('permanent_address')
                                 <span class="help-block">{{ $message }}</span>
@@ -347,10 +335,10 @@
                         </div>
 
                         <div class="form-group {{ $errors->has('religion') ? 'has-error' :'' }}">
-                            <label class="col-sm-2 control-label">Religion *</label>
+                            <label class="col-sm-2 control-label">Religion</label>
 
                             <div class="col-sm-10">
-                                <select class="form-control" name="religion" >
+                                <select class="form-control" name="religion">
                                     <option value="">Select Religion</option>
                                     <option value="1" {{ empty(old('religion')) ? ($errors->has('religion') ? '' : ($employee->religion == '1' ? 'selected' : '')) :
                                             (old('religion') == '1' ? 'selected' : '') }}>Muslim</option>
@@ -481,6 +469,45 @@
             });
 
             $('#salary_in_jolshiri').trigger('change');
+
+            // Form validation
+            $('form').on('submit', function(e) {
+                var isValid = true;
+                var errorMessage = '';
+
+                // Mobile number validation (only if provided)
+                var mobile = $('[name="mobile_no"]').val();
+                if (mobile && !/^[0-9]{11}$/.test(mobile)) {
+                    isValid = false;
+                    errorMessage += 'Mobile number must be exactly 11 digits.\n';
+                }
+
+                // Date validations (only if provided)
+                var dob = $('[name="date_of_birth"]').val();
+                var joiningDate = $('[name="joining_date"]').val();
+                var confirmationDate = $('[name="confirmation_date"]').val();
+
+                if (dob && new Date(dob) >= new Date()) {
+                    isValid = false;
+                    errorMessage += 'Date of birth must be in the past.\n';
+                }
+
+                if (joiningDate && new Date(joiningDate) > new Date()) {
+                    isValid = false;
+                    errorMessage += 'Joining date cannot be in the future.\n';
+                }
+
+                if (confirmationDate && joiningDate && new Date(confirmationDate) < new Date(joiningDate)) {
+                    isValid = false;
+                    errorMessage += 'Confirmation date must be after or equal to joining date.\n';
+                }
+
+                if (!isValid) {
+                    e.preventDefault();
+                    alert(errorMessage);
+                    return false;
+                }
+            });
         });
     </script>
 @endsection

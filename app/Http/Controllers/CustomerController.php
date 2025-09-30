@@ -83,7 +83,7 @@ class CustomerController extends Controller
 
         return DataTables::eloquent($query)
             ->addColumn('action', function(Customer $customer) {
-                $btn = '<a class="btn btn-info btn-sm" href="'.route('customer.edit', ['customer' => $customer->id]).'">Edit</a> ';
+                $btn = '<a class="btn btn-info btn-sm" href="'.route('customer.edit', ['customer' => $customer->id]).'" style="margin-bottom: 10px;">Edit</a>';
                 $btn .= '<a class="btn btn-success btn-sm btn-pay" role="button" data-id="' . $customer->id . '" data-name="' . $customer->name . '" data-due="' . $customer->due . '">Payment</a>';
                 return $btn;
             })
@@ -102,7 +102,7 @@ class CustomerController extends Controller
             })
             ->addColumn('branch_status', function(Customer $customer) {
                 if ($customer->company_branch_id == 1) {
-                    return '<span class="label label-success">Datascape Trading</span>';
+                    return '<span class="label label-success">AT International</span>';
                 }else {
                     return '<span class="label label-danger">Datascape IT Plus</span>';
                 }

@@ -261,6 +261,7 @@ class SaleController extends Controller
             $payment->sales_order_id = $order->id;
             $payment->customer_id = $customer->id;
             $payment->company_branch_id = $order->company_branch_id;
+            $payment->type = 1; // Pay (received payment)
             $payment->transaction_method = 1;
             $payment->received_type = 1;
             $payment->amount = $request->paid;
@@ -395,6 +396,7 @@ class SaleController extends Controller
             $payment->next_approximate_payment = $request->next_approximate_payment;
             $payment->customer_id = $customer->id;
             $payment->company_branch_id = Auth::user()->company_branch_id;
+            $payment->type = 1; // Pay (received payment)
             $payment->transaction_method = $request->payment_method; // Use the selected payment method
             $payment->sales_person_id = $request->sales_person_id;
             $payment->amount = $request->receive_amount; // Use receive amount as the payment amount
@@ -684,6 +686,7 @@ class SaleController extends Controller
             $payment->sales_order_id = null;
             $payment->customer_id = $request->customer_id;
             $payment->company_branch_id = Auth::user()->company_branch_id;
+            $payment->type = 1; // Pay (received payment)
             $payment->transaction_method = $request->payment_type;
             $payment->amount = $request->amount;
             $payment->date = $request->date;
@@ -785,6 +788,7 @@ class SaleController extends Controller
             $payment->sales_order_id = null;
             $payment->customer_id = $request->customer_id;
             $payment->company_branch_id = Auth::user()->company_branch_id;
+            $payment->type = 1; // Pay (received payment)
             $payment->transaction_method = 2;
             $payment->bank_id = $request->bank;
             $payment->branch_id = $request->branch;
@@ -1594,6 +1598,7 @@ class SaleController extends Controller
                 $payment->sales_order_id = $order->id;
                 $payment->customer_id = $request->customer;
                 $payment->company_branch_id = $order->company_branch_id;
+                $payment->type = 1; // Pay (received payment)
                 $payment->transaction_method = 2;
                 $payment->client_bank_name = $request->client_bank_name;
                 $payment->client_cheque_no = $request->client_cheque_no;
@@ -1941,6 +1946,7 @@ class SaleController extends Controller
     }
 
     public function voucherDelete(Request $request){
+        return $request->all();
 
         $salePayment = SalePayment::where('id',$request->id)->whereIn('status', [2,3])->first();
         if ($salePayment) {

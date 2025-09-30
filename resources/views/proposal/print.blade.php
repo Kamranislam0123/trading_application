@@ -126,7 +126,7 @@
                         Admin    
                     @endif
                 </b> <br>
-                <b> Bio-Access Tech Co,</b> <br>
+                <b> AT International,</b> <br>
                 <b> Date: {{ $proposal->date->format('d/m/Y') }}</b>
             </div>
         </div>
@@ -170,7 +170,7 @@
                     <b>{{ $proposal->customer->address??'' }}</b> <br>
                     Subject: Price Quotation for &#147 Facial Recognition &#148 <br> <br>
                     Dear Sir, <br>
-                    Greeting From Bio-Access Tech Co. ! Let us introduce ourselves and then lead you to the proposed solution
+                    Greeting From AT International ! Let us introduce ourselves and then lead you to the proposed solution
                     and pricing. <br>
                     We incepted in year 2005 as a pioneer biometric solution provider in Bangladesh. Over the period of times, the
                     company diversified in vertical and horizontal line such as Payroll Management Solution, Customized

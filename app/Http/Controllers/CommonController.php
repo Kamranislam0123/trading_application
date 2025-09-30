@@ -66,6 +66,24 @@ class CommonController extends Controller
 
         return response()->json($orders);
     }
+
+    public function getCustomerSalesPerson(Request $request)
+    {
+        $customer = Customer::find($request->customerId);
+        
+        if ($customer && $customer->employee_id) {
+            return response()->json([
+                'success' => true,
+                'sales_person_id' => $customer->employee_id,
+                'sales_person_name' => $customer->employee ? $customer->employee->name : null
+            ]);
+        }
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'No sales person assigned to this customer'
+        ]);
+    }
     public function getCustomer(Request $request)
     {
         $customers = Customer::where('company_branch_id', $request->branchId)

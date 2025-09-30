@@ -303,10 +303,10 @@ class PayrollController extends Controller
 
         return DataTables::eloquent($query)
             ->addColumn('department', function(Employee $employee) {
-                return $employee->department->name;
+                return $employee->department ? $employee->department->name : 'Not Assigned';
             })
             ->addColumn('designation', function(Employee $employee) {
-                return $employee->designation->name;
+                return $employee->designation ? $employee->designation->name : 'Not Assigned';
             })
             ->addColumn('action', function(Employee $employee) {
                 return '<a class="btn btn-info btn-sm btn-update" role="button" data-id="'.$employee->id.'">Update</a>';

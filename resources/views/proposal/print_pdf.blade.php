@@ -98,7 +98,7 @@
                         {{-- Admin     --}}
                     @endif
                 </b> <br>
-                <span style="font-weight: bold;"> Bio-Access Tech Co,</span> <br>
+                <span style="font-weight: bold;"> AT International,</span> <br>
                 <b> Date: {{ $proposal->date->format('d/m/Y') }}</b>
             </div>
         </div>
@@ -150,7 +150,7 @@
                     Subject: Price Quotation for  {{ $proposal->title }}  <br> <br>
                     Dear Sir, <br>
                     <span style="font-size: 14px;"> 
-                        Greeting From Bio-Access Tech Co. ! Let us introduce ourselves and then lead you to the proposed solution
+                        Greeting From AT International ! Let us introduce ourselves and then lead you to the proposed solution
                     and pricing. <br> <br>
                     We incepted in year 2005 as a pioneer biometric solution provider in Bangladesh. Over the period of times, the
                     company diversified in vertical and horizontal line such as Payroll Management Solution, Customized

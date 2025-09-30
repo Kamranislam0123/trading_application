@@ -347,12 +347,21 @@
                                             <div class="row">
                                                 <div class="col-md-4">
                                                     <div class="form-group">
-                                                        <label>Year</label>
-                                                        <select class="form-control" id="target-year">
-                                                            @for($i=2020; $i <= date('Y') + 1; $i++)
-                                                                <option value="{{ $i }}" {{ $i == date('Y') ? 'selected' : '' }}>{{ $i }}</option>
-                                                            @endfor
-                                                        </select>
+                                                        <label>From Date</label>
+                                                        <input type="date" class="form-control" id="target-from-date">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <div class="form-group">
+                                                        <label>To Date</label>
+                                                        <input type="date" class="form-control" id="target-to-date">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <div class="form-group">
+                                                        <label>&nbsp;</label><br>
+                                                        <button type="button" class="btn btn-primary" id="filter-targets">Filter</button>
+                                                        <button type="button" class="btn btn-warning" id="reset-targets">Reset</button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -523,14 +532,38 @@
                 });
             }); --}}
 
-            $('#target-year').change(function () {
-                var year = $(this).val();
+            $('#filter-targets').click(function () {
+                var fromDate = $('#target-from-date').val();
+                var toDate = $('#target-to-date').val();
                 var employeeId = '{{ $employee->id }}';
 
                 $.ajax({
                     method: "POST",
                     url: "{{ route('employee.get_targets') }}",
-                    data: { year: year, employeeId: employeeId }
+                    data: { 
+                        from_date: fromDate, 
+                        to_date: toDate, 
+                        employeeId: employeeId 
+                    }
+                }).done(function( response ) {
+                    $('#target-table').html(response.html);
+                });
+            });
+
+            $('#reset-targets').click(function () {
+                $('#target-from-date').val('');
+                $('#target-to-date').val('');
+                
+                // Reload all targets
+                var employeeId = '{{ $employee->id }}';
+                $.ajax({
+                    method: "POST",
+                    url: "{{ route('employee.get_targets') }}",
+                    data: { 
+                        from_date: '', 
+                        to_date: '', 
+                        employeeId: employeeId 
+                    }
                 }).done(function( response ) {
                     $('#target-table').html(response.html);
                 });
@@ -539,7 +572,7 @@
     </script>
     <script>
 
-        var APP_URL = '{!! url()->full()  !!}';
+        var APP_URL = '{!! url()->current()  !!}';
         function getprint(prinarea_profile) {
 
             $('body').html($('#'+prinarea_profile).html());
